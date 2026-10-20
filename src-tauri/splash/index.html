@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Assay</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #121110; color: #8C8376; font: 500 14px/1.4 -apple-system, system-ui, sans-serif; }
+  body { display: grid; place-items: center; }
+  .wrap { display: grid; justify-items: center; gap: 18px; }
+  .mark { width: 64px; height: 64px; filter: drop-shadow(0 0 18px #E8B04B55); animation: breathe 2.2s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .mark { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <img class="mark" src="seal.svg" alt="" />
+    <p>Starting the engine</p>
+  </div>
+</body>
+</html>

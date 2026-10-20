@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { actionsFor, openApp, quarantine, quarantined, release, reveal, trash, update } from "./actions.js";
 import { getProgress, lastResult, startAssay } from "./assay.js";
+import { writeSpecimen } from "./models/specimen.js";
 import { CACHE_DIR, DATA_DIR, DIST_DIR, PORT, VERSION } from "./paths.js";
 import { readPlist, run } from "./run.js";
 import { getSettings, hash, updateSettings } from "./store.js";
@@ -58,6 +59,9 @@ app.post("/api/open-data", wrap(async (_req, res) => {
   await run("open", [DATA_DIR], 5_000);
   res.status(204).end();
 }));
+
+// Writes the harmless test specimen to Downloads so anyone can watch Assay catch it.
+app.post("/api/specimen", wrap(async (_req, res) => res.json({ path: await writeSpecimen() })));
 
 app.get("/api/about", wrap(async (_req, res) => res.json({ version: VERSION, dataDir: DATA_DIR, pid: process.pid })));
 

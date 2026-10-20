@@ -34,8 +34,13 @@ async function runAssay(): Promise<AssayResult> {
   const startedAt = Date.now();
   progress = { running: true, stage: "Starting", found: empty(), startedAt };
   const items: Item[] = [];
+  const settings = await getSettings();
+  const hidden = new Set(settings.hiddenItems);
+  // Hidden by id, or by path so a hide survives the item being re-read.
+  const isHidden = (i: Item) => hidden.has(i.id) || (!!i.path && hidden.has(i.path));
   const onItem = (i: Item) => {
     items.push(i);
+    if (isHidden(i)) return;
     progress.found[i.layer].items++;
     progress.found[i.layer].parts += i.parts.length;
   };
@@ -55,10 +60,7 @@ async function runAssay(): Promise<AssayResult> {
   stage("containers", "Listing Docker images");
   const containers = await collectContainers(onItem);
 
-  const settings = await getSettings();
-  const hidden = new Set(settings.hiddenItems);
-  // Hidden by id, or by path so a hide survives the item being re-read.
-  const visible = items.filter((i) => !hidden.has(i.id) && !(i.path && hidden.has(i.path)));
+  const visible = items.filter((i) => !isHidden(i));
 
   const findings = visible.flatMap(modelFindings);
   const queries = visible.flatMap((i) => i.parts.filter((p) => checkable(p.ecosystem) && p.version).map((p) => ({ ecosystem: p.ecosystem, name: p.name, version: p.version! })));

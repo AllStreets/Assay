@@ -204,7 +204,7 @@ async function files(paths: string[], source: string, onItem: (i: Item) => void,
       evidence: `The file’s own header (${r.file.format})`,
       sizeBytes: r.file.sizeBytes,
       parts: [],
-      meta: { source, architecture: report.architecture, quantization: report.quantization },
+      meta: { source: source === "Folder" ? path.dirname(p).replace(HOME, "~") : source, architecture: report.architecture, quantization: report.quantization },
       model: report,
     };
     items.push(item);

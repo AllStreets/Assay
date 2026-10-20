@@ -113,3 +113,17 @@ test("scans the pickle inside a PyTorch zip file", async () => {
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test("the test specimen is caught, and python agrees on what it imports", async () => {
+  const { specimenBytes } = await import("./specimen.js");
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "assay-spec-"));
+  try {
+    const file = path.join(dir, "assay-test-specimen.pt");
+    await fs.writeFile(file, specimenBytes());
+    const r = await scanPickleFile(file);
+    assert.equal(r.format, "pytorch-zip");
+    assert.deepEqual(r.imports, [{ module: "posix", name: "system", verdict: "dangerous" }]);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

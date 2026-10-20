@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { ActionResult, Item, QuarantineRecord } from "../shared/types.js";
-import { lastResult } from "./assay.js";
+import { lastResult, restore, withdraw } from "./assay.js";
 import { QUARANTINE_DIR, QUARANTINE_FILE } from "./paths.js";
 import { run } from "./run.js";
 import { duBytes, exists, hash, readJson, writeJson } from "./store.js";
@@ -67,7 +67,8 @@ export async function quarantine(itemId: unknown): Promise<ActionResult> {
     if (code === "EACCES" || code === "EPERM") throw new Error("macOS didn’t allow Assay to move it. It may belong to an administrator.");
     throw e;
   }
-  const rec: QuarantineRecord = { id, itemId: item.id, name: item.name, from, to, at: Date.now(), bytes };
+  const held = await withdraw(item.id);
+  const rec: QuarantineRecord = { id, itemId: item.id, name: item.name, from, to, at: Date.now(), bytes, item: held?.item, findings: held?.findings };
   await writeJson(QUARANTINE_FILE, [rec, ...(await records())]);
   return { ok: true, message: `${item.name} is quarantined. It can’t be used until you release it.`, undo: id };
 }
@@ -81,6 +82,7 @@ export async function release(recordId: unknown): Promise<ActionResult> {
   await fs.rename(rec.to, rec.from);
   await fs.rm(path.dirname(rec.to), { recursive: true, force: true });
   await writeJson(QUARANTINE_FILE, all.filter((r) => r.id !== rec.id));
+  if (rec.item) await restore(rec.item, rec.findings ?? []);
   return { ok: true, message: `${rec.name} is back where it was.` };
 }
 
@@ -95,6 +97,7 @@ export async function trash(itemId: unknown): Promise<ActionResult> {
   let dest = path.join(trashDir, path.basename(from));
   if (await exists(dest)) dest = path.join(trashDir, `${path.basename(from)} ${new Date().toISOString().replace(/[:.]/g, "-")}`);
   await fs.rename(from, dest);
+  await withdraw(item.id);
   return { ok: true, message: `${item.name} is in the Trash. Put it back from there any time.` };
 }
 

@@ -178,7 +178,7 @@ export function Quarantine({ onChanged }: { onChanged: () => void }) {
       <ul className="att-list">
         {recs?.map((r) => (
           <li key={r.id} className="att-card static">
-            <KindGlyph kind="model-file" size={28} />
+            <KindGlyph kind={r.item?.kind ?? "model-file"} size={28} />
             <div className="att-body">
               <p className="att-title"><b>{r.name}</b><span className="muted">quarantined {when(r.at)}</span></p>
               <p className="att-parts muted"><code>{r.from.replace(/^\/Users\/[^/]+/, "~")}</code></p>

@@ -1,5 +1,5 @@
 import os from "node:os";
-import type { AssayResult, Item, Layer, Progress } from "../shared/types.js";
+import type { AssayResult, Finding, Item, Layer, Progress } from "../shared/types.js";
 import { collectApps } from "./collectors/apps.js";
 import { collectExtensions } from "./collectors/extensions.js";
 import { collectModels } from "./collectors/models.js";
@@ -17,6 +17,32 @@ let running: Promise<AssayResult> | undefined;
 let last: AssayResult | null | undefined;
 
 export const getProgress = () => progress;
+
+const layersOf = (items: Item[]) =>
+  LAYERS.map((l) => ({ layer: l, items: items.filter((i) => i.layer === l).length, parts: items.filter((i) => i.layer === l).reduce((a, i) => a + i.parts.length, 0) }));
+
+// After an action moves something, the saved assay follows: the item leaves it, and comes
+// back with its findings when it is released, so no page shows a thing that isn't there.
+export async function withdraw(itemId: string): Promise<{ item: Item; findings: Finding[] } | undefined> {
+  const r = await lastResult();
+  const item = r?.items.find((i) => i.id === itemId);
+  if (!r || !item) return;
+  const findings = r.findings.filter((f) => f.itemId === itemId);
+  r.items = r.items.filter((i) => i.id !== itemId);
+  r.findings = r.findings.filter((f) => f.itemId !== itemId);
+  r.layers = layersOf(r.items);
+  await writeJson(RESULT_FILE, r);
+  return { item, findings };
+}
+
+export async function restore(item: Item, findings: Finding[]) {
+  const r = await lastResult();
+  if (!r || r.items.some((i) => i.id === item.id)) return;
+  r.items.push(item);
+  r.findings = [...r.findings, ...findings].sort(bySeverity);
+  r.layers = layersOf(r.items);
+  await writeJson(RESULT_FILE, r);
+}
 
 export async function lastResult(): Promise<AssayResult | null> {
   last ??= await readJson<AssayResult | null>(RESULT_FILE, null);
@@ -86,7 +112,7 @@ async function runAssay(): Promise<AssayResult> {
     host: os.hostname().replace(/\.local$/, ""),
     items: visible,
     findings,
-    layers: LAYERS.map((l) => ({ layer: l, items: visible.filter((i) => i.layer === l).length, parts: visible.filter((i) => i.layer === l).reduce((a, i) => a + i.parts.length, 0) })),
+    layers: layersOf(visible),
     vulnCheck,
   };
   if (containers.note) result.notes = [containers.note];

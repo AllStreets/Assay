@@ -146,6 +146,9 @@ export interface QuarantineRecord {
   to: string;
   at: number;
   bytes: number;
+  // The item and its findings as they were, so release puts them back in the assay.
+  item?: Item;
+  findings?: Finding[];
 }
 
 export interface ActionResult {

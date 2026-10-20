@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mock: Assay, the first ten seconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter+Tight:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --basalt: #121110; --basalt-2: #1B1917; --basalt-3: #252220; --rule: #34302B;
+    --bone: #EFE6D8; --bone-2: #C9BFAF; --ash: #8C8376;
+    --gold: #E8B04B; --oxide: #E0603F; --verdigris: #6CB8A0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--basalt); color: var(--bone); font: 400 15px/1.55 "Inter Tight", system-ui, sans-serif; overflow: hidden; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .06;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .mock-tag { position: fixed; left: 18px; bottom: 14px; font: 500 11px "Geist Mono", monospace; letter-spacing: .2em; color: var(--ash); z-index: 9; }
+  .replay { position: fixed; right: 18px; bottom: 12px; z-index: 9; height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--rule); background: var(--basalt-2); color: var(--bone-2); font: 500 13px "Inter Tight"; cursor: pointer; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; padding: 22px 40px; border-bottom: 1px solid #221F1C; }
+  .brand { display: flex; align-items: center; gap: 12px; font: 600 19px "Inter Tight"; letter-spacing: .01em; }
+  .seal { width: 26px; height: 26px; }
+  .stamp { font: 500 11.5px "Geist Mono"; letter-spacing: .22em; color: var(--ash); }
+  .stamp b { color: var(--gold); font-weight: 500; }
+
+  .stage { display: grid; grid-template-columns: 520px 1fr; gap: 56px; padding: 34px 40px 0 64px; height: calc(100% - 71px); }
+
+  /* The core sample */
+  .core-wrap { position: relative; }
+  .core-wrap svg { width: 100%; height: 740px; overflow: visible; }
+  .lbl { font: 600 14px "Inter Tight"; fill: var(--bone); }
+  .cnt { font: 500 12.5px "Geist Mono"; fill: var(--ash); }
+  .cnt-big { font: 500 22px "Geist Mono"; fill: var(--bone); }
+  .glint { cursor: pointer; transform-box: fill-box; transform-origin: center; }
+  .glint.flag { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  /* Verdict and trace */
+  .right { display: flex; flex-direction: column; padding-top: 18px; }
+  .phase { font: 500 11.5px "Geist Mono"; letter-spacing: .22em; color: var(--ash); min-height: 18px; }
+  .phase b { color: var(--gold); font-weight: 500; }
+  .verdict { margin: 14px 0 0; max-width: 23em; font: 400 33px/1.24 "Spectral", Georgia, serif; letter-spacing: -.005em; min-height: 168px; }
+  .verdict em { font-style: normal; color: var(--gold); }
+  .verdict .red { color: var(--oxide); }
+  .verdict .cursor { display: inline-block; width: 2px; height: .9em; background: var(--bone-2); vertical-align: -.1em; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .trace { margin-top: 18px; opacity: 0; transform: translateY(12px); transition: all .6s cubic-bezier(.2,1,.3,1); }
+  .trace.on { opacity: 1; transform: none; }
+  .trace-h { font: 500 11.5px "Geist Mono"; letter-spacing: .22em; color: var(--oxide); margin-bottom: 14px; }
+  .chain { display: flex; flex-direction: column; gap: 0; max-width: 620px; }
+  .link { display: grid; grid-template-columns: 30px 1fr auto; gap: 14px; align-items: center; padding: 13px 16px; border: 1px solid var(--rule); background: var(--basalt-2); border-radius: 10px; opacity: 0; transform: translateX(-10px); transition: all .45s ease; }
+  .link.on { opacity: 1; transform: none; }
+  .link.bad { border-color: #E0603F66; background: linear-gradient(90deg, #E0603F1A, var(--basalt-2) 60%); }
+  .link .k { font: 500 11px "Geist Mono"; letter-spacing: .14em; color: var(--ash); }
+  .link b { display: block; font: 600 16px "Inter Tight"; }
+  .link span { color: var(--bone-2); font-size: 13.5px; }
+  .link code { font: 400 12px "Geist Mono"; color: var(--ash); }
+  .joint { width: 2px; height: 16px; margin-left: 30px; background: linear-gradient(var(--oxide), #E0603F33); opacity: 0; transition: opacity .3s; }
+  .joint.on { opacity: 1; }
+  .ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font: 600 13px "Inter Tight"; }
+
+  .actions { display: flex; gap: 10px; margin-top: 22px; opacity: 0; transition: opacity .5s; }
+  .actions.on { opacity: 1; }
+  .btn { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--rule); background: var(--basalt-2); color: var(--bone-2); font: 600 14px "Inter Tight"; cursor: pointer; }
+  .btn.gold { background: var(--gold); border-color: var(--gold); color: #1B1306; box-shadow: 0 0 24px #E8B04B44; }
+  .note { margin-top: 12px; font-size: 13px; color: var(--ash); opacity: 0; transition: opacity .5s; }
+  .note.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg class="seal" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="#E8B04B" stroke-width="1.6"/><circle cx="16" cy="16" r="9.5" stroke="#E8B04B" stroke-opacity=".45" stroke-width="1" stroke-dasharray="2 2"/><path d="M11 20.5 16 9l5 11.5M12.8 16.6h6.4" stroke="#EFE6D8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Assay
+  </div>
+  <div class="stamp" id="stamp">ASSAY NO. 0001     MACBOOK PRO     <b>IN PROGRESS</b></div>
+</header>
+
+<main class="stage">
+  <div class="core-wrap"><svg id="core" viewBox="0 0 520 740" aria-label="A core sample of the Mac: layers of software from apps down to containers, with a vein of AI models through them"></svg></div>
+  <section class="right">
+    <p class="phase" id="phase"></p>
+    <p class="verdict" id="verdict"></p>
+    <div class="trace" id="trace">
+      <p class="trace-h">TRACE     FROM THE FLAW TO WHAT YOU USE</p>
+      <div class="chain">
+        <div class="link bad" data-i="0"><div class="ic" style="background:#E0603F22;color:#E0603F">!</div><div><b>libwebp 1.3.1</b><span>Image decoder with a known heap overflow, CVE-2023-4863. Fixed in 1.3.2.</span></div><code>OSV · GHSA-j7hp-h8jx-5ppr</code></div>
+        <div class="joint" data-i="1"></div>
+        <div class="link" data-i="2"><div class="ic" style="background:#252220;color:#C9BFAF">E</div><div><b>Electron 25.8.0</b><span>Bundles that libwebp. 3 copies of this Electron are on your Mac.</span></div><code>Frameworks/Electron Framework</code></div>
+        <div class="joint" data-i="3"></div>
+        <div class="link" data-i="4"><div class="ic" style="background:linear-gradient(135deg,#2fd1c6,#3a5bff);color:#fff">D</div><div><b>Driftwave 3.8.2</b><span>You opened it 2 hours ago. It decodes WebP images from the web.</span></div><code>/Applications/Driftwave.app</code></div>
+      </div>
+      <div class="actions" id="actions">
+        <button class="btn gold">Update Driftwave to 3.9.1</button>
+        <button class="btn">Quarantine until fixed</button>
+        <button class="btn">Show the evidence</button>
+      </div>
+      <p class="note" id="note">3.9.1 ships Electron 26.2.1, which carries the fixed libwebp. Quarantine is undoable: the app stays on disk and can’t launch until you release it.</p>
+    </div>
+  </section>
+</main>
+<div class="mock-tag">MOCK SCENE     EXAMPLE DATA, NOT YOUR MAC</div>
+<button class="replay" id="replay">Replay</button>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const el = (t, a, p) => { const n = document.createElementNS(NS, t); for (const k in a) n.setAttribute(k, a[k]); p && p.appendChild(n); return n; };
+
+// Example layers: name, colour, items, libraries inside.
+const LAYERS = [
+  { name: "Apps", sub: "apps", color: "#B89A72", items: 142, libs: 3211, h: 180 },
+  { name: "Extensions", sub: "browser and editor", color: "#7D7468", items: 61, libs: 884, h: 110 },
+  { name: "Packages", sub: "Homebrew, npm, pip", color: "#5E5850", items: 917, libs: 4605, h: 180 },
+  { name: "Containers", sub: "Docker images", color: "#3F3B36", items: 12, libs: 618, h: 120 },
+];
+const MODELS = { items: 23, gb: 214 };
+const TOP = 40, X = 40, W = 220;
+
+let timers = [];
+const at = (ms, f) => timers.push(setTimeout(f, ms));
+
+// Points along a slightly irregular boundary, like real strata.
+function edge(y, seed, flat) {
+  const pts = [];
+  for (let i = 0; i <= 8; i++) pts.push([X + (W * i) / 8, flat ? y : y + Math.sin(i * 1.7 + seed) * 4]);
+  return pts;
+}
+
+function draw(depth) {
+  const svg = $("core");
+  svg.innerHTML = "";
+  const defs = el("defs", {}, svg);
+  const clip = el("clipPath", { id: "drill" }, defs);
+  el("rect", { x: X - 2, y: TOP - 20, width: W + 4, height: depth }, clip);
+  const glow = el("filter", { id: "glow", x: "-50%", y: "-50%", width: "200%", height: "200%" }, defs);
+  el("feGaussianBlur", { stdDeviation: "5" }, glow);
+  const hatch = el("pattern", { id: "grain", width: "6", height: "6", patternUnits: "userSpaceOnUse" }, defs);
+  el("circle", { cx: "1.5", cy: "1.5", r: ".7", fill: "#000", "fill-opacity": ".22" }, hatch);
+
+  const total = LAYERS.reduce((a, l) => a + l.h, 0);
+  // Casing of the core.
+  el("rect", { x: X - 6, y: TOP - 14, width: W + 12, height: total + 28, rx: 14, fill: "none", stroke: "#34302B" }, svg);
+  const g = el("g", { "clip-path": "url(#drill)" }, svg);
+  let y = TOP;
+  LAYERS.forEach((l, i) => {
+    const top = edge(y, i, i === 0);
+    const bottom = edge(y + l.h, i + 1, i === LAYERS.length - 1).reverse();
+    const d = "M" + [...top, ...bottom].map((p) => p.join(" ")).join(" L") + " Z";
+    el("path", { d, fill: l.color }, g);
+    el("path", { d, fill: "url(#grain)" }, g);
+    l.y = y;
+    y += l.h;
+  });
+  // The AI-model vein running through every layer.
+  const vein = `M${X - 4} ${TOP + 70} C ${X + 80} ${TOP + 180}, ${X + 40} ${TOP + 330}, ${X + 150} ${TOP + 430} S ${X + 190} ${TOP + 560}, ${X + W + 4} ${TOP + 610}`;
+  el("path", { d: vein, stroke: "#E8B04B", "stroke-width": 12, fill: "none", opacity: .55, filter: "url(#glow)" }, g);
+  el("path", { d: vein, stroke: "#F3CB7A", "stroke-width": 5, fill: "none", "stroke-linecap": "round" }, g);
+  // Drill head.
+  if (depth < total + 30) el("line", { x1: X - 14, x2: X + W + 14, y1: TOP - 20 + depth, y2: TOP - 20 + depth, stroke: "#EFE6D8", "stroke-width": 1.5, opacity: .8 }, svg);
+
+  // Layer labels and climbing counts.
+  LAYERS.forEach((l) => {
+    if (TOP - 20 + depth < l.y + 20) return;
+    const k = Math.min(1, (TOP - 20 + depth - l.y) / l.h);
+    const lx = X + W + 34;
+    el("line", { x1: X + W + 8, x2: lx - 8, y1: l.y + 22, y2: l.y + 22, stroke: "#34302B" }, svg);
+    el("text", { x: lx, y: l.y + 27, class: "lbl" }, svg).textContent = l.name;
+    el("text", { x: lx, y: l.y + 52, class: "cnt-big" }, svg).textContent = Math.round(l.items * k).toLocaleString();
+    el("text", { x: lx, y: l.y + 74, class: "cnt" }, svg).textContent = `${Math.round(l.libs * k).toLocaleString()} libraries inside`;
+  });
+  if (depth > 260) {
+    const vy = TOP + total + 46;
+    el("line", { x1: X + W - 10, x2: X + W - 10, y1: TOP + total - 30, y2: vy - 18, stroke: "#E8B04B", "stroke-opacity": .5 }, svg);
+    el("text", { x: X, y: vy, class: "lbl", style: "fill:#E8B04B" }, svg).textContent = "AI models, a vein through every layer";
+    el("text", { x: X, y: vy + 24, class: "cnt" }, svg).textContent = `${MODELS.items} models, ${MODELS.gb} GB`;
+  }
+}
+
+function glints() {
+  const svg = $("core");
+  const marks = [
+    { x: X + 66, y: TOP + 118, c: "#E0603F", flag: true, trace: true },
+    { x: X + 172, y: TOP + 236, c: "#E0603F", flag: true },
+    { x: X + 118, y: TOP + 452, c: "#E0603F", flag: true },
+    { x: X + 160, y: TOP + 405, c: "#FF8A3D", flag: true },
+  ];
+  marks.forEach((m, i) => {
+    at(i * 180, () => {
+      const g = el("g", { class: `glint${m.flag ? " flag" : ""}` }, svg);
+      el("circle", { cx: m.x, cy: m.y, r: 13, fill: m.c, opacity: .35, filter: "url(#glow)" }, g);
+      el("path", { d: `M${m.x} ${m.y - 8} L${m.x + 8} ${m.y} L${m.x} ${m.y + 8} L${m.x - 8} ${m.y} Z`, fill: m.c, stroke: "#121110", "stroke-width": 1.5 }, g);
+      if (m.trace) g.id = "first";
+    });
+  });
+}
+
+function type(html, done) {
+  const plain = html.replace(/<[^>]+>/g, "");
+  let i = 0;
+  (function step() {
+    i += 2;
+    $("verdict").innerHTML = plain.slice(0, i).replace(/\n/g, "<br>") + '<span class="cursor"></span>';
+    if (i < plain.length) at(22, step); else { $("verdict").innerHTML = html; done && done(); }
+  })();
+}
+
+function run() {
+  timers.forEach(clearTimeout); timers = [];
+  ["trace", "actions", "note"].forEach((i) => $(i).classList.remove("on"));
+  document.querySelectorAll(".link, .joint").forEach((n) => n.classList.remove("on"));
+  $("verdict").innerHTML = ""; $("phase").innerHTML = "";
+  $("stamp").innerHTML = 'ASSAY NO. 0001     MACBOOK PRO     <b>IN PROGRESS</b>';
+  const total = LAYERS.reduce((a, l) => a + l.h, 0) + 30;
+  const start = performance.now() + 400;
+  $("phase").innerHTML = "DRILLING     READING EVERY PIECE OF SOFTWARE";
+  (function frame(t) {
+    const k = Math.max(0, Math.min(1, (t - start) / 5200));
+    draw(total * (1 - Math.pow(1 - k, 2)));
+    if (k < 1) requestAnimationFrame(frame);
+    else settle();
+  })(performance.now());
+
+  function settle() {
+    $("phase").innerHTML = 'ASSAYED     <b>1,155 PIECES     9,318 LIBRARIES     23 MODELS</b>';
+    $("stamp").innerHTML = 'ASSAY NO. 0001     MACBOOK PRO     <b>4 FLAGS</b>';
+    glints();
+    at(500, () => type('Your Mac runs <em>1,155</em> pieces of software built from <em>9,318</em> open-source libraries. <span class="red">3 carry a known vulnerability</span>, and <span class="red">one AI model would run code the moment it’s loaded.</span>', () => at(900, trace)));
+  }
+
+  function trace() {
+    const first = document.getElementById("first");
+    if (first) first.querySelector("path").setAttribute("stroke", "#EFE6D8");
+    $("trace").classList.add("on");
+    document.querySelectorAll(".link, .joint").forEach((n) => at(300 + n.dataset.i * 260, () => n.classList.add("on")));
+    at(1900, () => $("actions").classList.add("on"));
+    at(2300, () => $("note").classList.add("on"));
+  }
+}
+
+$("replay").onclick = run;
+run();
+</script>
+</body>
+</html>

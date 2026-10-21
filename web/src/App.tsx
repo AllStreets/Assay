@@ -1,20 +1,19 @@
-import { FlaskConical, Settings as Cog } from "lucide-react";
+import { FlaskConical, Moon, Settings as Cog, Sun } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Item, Progress } from "../../shared/types";
 import { api, type Result } from "./api";
 import { Home } from "./components/Home";
 import { ItemView } from "./components/ItemView";
 import { Findings, Inventory, Models, Quarantine, SettingsPage } from "./components/Pages";
-import { MetalDefs } from "./components/Metal";
 import { Button } from "./components/ui";
 import { num, when } from "./format";
 
 const TABS = [
-  ["#/", "Touchstone"],
-  ["#/findings", "Findings"],
-  ["#/models", "Models"],
-  ["#/inventory", "Inventory"],
-  ["#/quarantine", "Quarantine"],
+  ["#/", "overview"],
+  ["#/findings", "findings"],
+  ["#/models", "models"],
+  ["#/inventory", "inventory"],
+  ["#/quarantine", "quarantine"],
 ] as const;
 
 function useRoute() {
@@ -109,47 +108,70 @@ export function App() {
   const libs = result ? result.layers.reduce((a, l) => a + l.parts, 0) : 0;
 
   return (
-    <div className="shell">
-      <MetalDefs />
+    <div className="frame">
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <a className="brand" href="#/" aria-label="Assay home">
           <BrandMark />
-          <span className="brand-word">Assay</span>
+          <span className="brand-text"><b>assay</b><small>software bill of materials / mac</small></span>
         </a>
-        <nav className="tabs" aria-label="Pages">
+        <nav className="keys" aria-label="Pages">
           {TABS.map(([href, label]) => (
-            <a key={href} href={href} className="plate" aria-current={tabOn(href) ? "page" : undefined}>
+            <a key={href} href={href} className="key" aria-current={tabOn(href) ? "page" : undefined}>
+              <i className="lamp" aria-hidden />
               {label}
-              {href === "#/findings" && flagged > 0 && <span className="tab-n">{num(flagged)}</span>}
+              {href === "#/findings" && flagged > 0 && <span className="key-n">{num(flagged)}</span>}
             </a>
           ))}
         </nav>
-        <div className="top-right">
-          {result && !running && (
-            <div className="readout" title={`Last assay ${new Date(result.finishedAt).toLocaleString()}`}>
-              <span className="lcd">{num(libs)} libraries weighed</span>
-              <span className="readout-note">{when(result.finishedAt)}</span>
-            </div>
-          )}
-          <Button variant={result ? "plate" : "gold"} icon={FlaskConical} busy={running} onClick={run}>{running ? "Assaying" : result ? "Assay again" : "Run assay"}</Button>
-          <a href="#/settings" className="icon-plate" aria-label="Settings" aria-current={route === "#/settings" ? "page" : undefined}><Cog size={16} /></a>
+        <div className="keys keys-right">
+          <ThemeKey />
+          <a href="#/settings" className="key" aria-current={route === "#/settings" ? "page" : undefined}><Cog size={14} aria-hidden />settings</a>
+          <Button variant="go" icon={FlaskConical} busy={running} onClick={run}>{running ? "assaying" : result ? "assay again" : "run assay"}</Button>
         </div>
       </header>
       {error && <p className="note-strip bad top-error" role="alert">Assay’s engine isn’t answering: {error}</p>}
-      <main id="main">{page}</main>
+      <main id="main" className="main">{page}</main>
+      <footer className="status">
+        {result ? (
+          <>
+            <span>host <b>{result.host}</b></span>
+            <span>items <b>{num(result.items.length)}</b></span>
+            <span>libraries <b>{num(libs)}</b></span>
+            <span>osv <b>{result.vulnCheck.ran ? `${num(result.vulnCheck.queried)} versions` : "off"}</b></span>
+            <span>assayed <b>{when(result.finishedAt)}</b></span>
+          </>
+        ) : <span>no assay yet</span>}
+        <span className="status-r">local only / nothing loaded</span>
+      </footer>
     </div>
   );
 }
 
-// Two streaks on a black stone: one gold, one copper. Assay's mark.
+// Light is the bench; dark is the same bench after hours. Remembered per viewer.
+function ThemeKey() {
+  const [dark, setDark] = useState(() => {
+    try { return localStorage.getItem("assay-theme") === "dark"; } catch { return false; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    try { localStorage.setItem("assay-theme", dark ? "dark" : "light"); } catch { /* private window */ }
+  }, [dark]);
+  return (
+    <button className="key key-icon" onClick={() => setDark((d) => !d)} aria-label={dark ? "Switch to light" : "Switch to dark"} aria-pressed={dark}>
+      {dark ? <Sun size={14} /> : <Moon size={14} />}
+    </button>
+  );
+}
+
+// A reticle with one lit point: something found. Assay's mark.
 function BrandMark() {
   return (
-    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden>
-      <rect x="1" y="1" width="28" height="28" rx="5" fill="#07080a" />
-      <rect x="1.5" y="1.5" width="27" height="27" rx="4.5" fill="none" stroke="#ffffff14" />
-      <path d="M6 20.5 C10 19, 15 18.4, 24 17" stroke="url(#m-fine)" strokeWidth="3.4" strokeLinecap="round" fill="none" filter="url(#rub)" />
-      <path d="M7 11.5 C11 11, 16 10.6, 21 9.8" stroke="url(#m-copper)" strokeWidth="2.6" strokeLinecap="round" fill="none" filter="url(#rub)" />
+    <svg className="brand-mark" width="34" height="34" viewBox="0 0 34 34" aria-hidden>
+      <rect x="1" y="1" width="32" height="32" rx="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="17" cy="17" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M17 9V5M17 29v-4M9 17H5M29 17h-4" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="22.6" cy="11.4" r="2.6" fill="var(--hot)" />
     </svg>
   );
 }

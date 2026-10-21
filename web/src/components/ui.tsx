@@ -2,14 +2,14 @@
 import { AppWindow, Beer, Container, Gem, LoaderCircle, Package, Puzzle, SquareCode, type LucideIcon } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import type { Severity } from "../../../shared/types";
-import { SEVERITY_NAME, type Metal } from "../format";
-import { Punch, Streak } from "./Metal";
+import { SEVERITY_NAME } from "../format";
 
-type Variant = "gold" | "plate" | "ghost" | "danger" | "quiet";
+// key: a physical key; go: the one orange action on a screen.
+type Variant = "key" | "go" | "danger" | "quiet" | "gold" | "plate" | "ghost";
 
-export function Button({ variant = "ghost", icon: Icon, busy, children, ...rest }: { variant?: Variant; icon?: LucideIcon; busy?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function Button({ variant = "key", icon: Icon, busy, children, ...rest }: { variant?: Variant; icon?: LucideIcon; busy?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button {...rest} className={`btn btn-${variant}${rest.className ? ` ${rest.className}` : ""}`} disabled={rest.disabled || busy} aria-busy={busy || undefined}>
+    <button {...rest} className={`btn btn-${variant === "gold" ? "go" : variant === "plate" || variant === "ghost" ? "key" : variant}${rest.className ? ` ${rest.className}` : ""}`} disabled={rest.disabled || busy} aria-busy={busy || undefined}>
       {busy ? <LoaderCircle size={15} aria-hidden className="spin" /> : Icon && <Icon size={15} aria-hidden />}
       {children}
     </button>
@@ -24,10 +24,9 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
   );
 }
 
-// Severity as the streak it would leave on the stone, and a word.
-const SEV_METAL: Record<Severity, Metal> = { critical: "base", high: "copper", medium: "rose", low: "pale", info: "unread" };
+// Severity as a lamp and a word.
 export function Sev({ s }: { s: Severity }) {
-  return <span className={`sev sev-${s}`}><Streak metal={SEV_METAL[s]} width={22} height={7} />{SEVERITY_NAME[s]}</span>;
+  return <span className={`sev sev-${s}`}><i aria-hidden />{SEVERITY_NAME[s]}</span>;
 }
 
 export function PageHead({ title, lede, meta, actions }: { title: string; lede?: ReactNode; meta?: ReactNode; actions?: ReactNode }) {
@@ -40,18 +39,6 @@ export function PageHead({ title, lede, meta, actions }: { title: string; lede?:
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </header>
-  );
-}
-
-// The marks an assay office punches into metal it has tested: what it is, its fineness, and
-// which assay it was. They head every certificate.
-export function Hallmarks({ kind, fine, assay }: { kind: string; fine: number | null; assay: number }) {
-  return (
-    <div className="hallmarks" aria-label={fine === null ? "Not assayed" : fine === 0 ? "Base" : `${fine} fine`}>
-      <Punch shape="shield"><KindGlyph kind={kind} size={17} bare /></Punch>
-      <Punch shape="oval" tone={fine === 0 ? "base" : undefined}>{fine === null ? "?" : fine === 0 ? "base" : fine}</Punch>
-      <Punch shape="square">{assay}</Punch>
-    </div>
   );
 }
 

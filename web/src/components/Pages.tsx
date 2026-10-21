@@ -3,13 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { Layer, QuarantineRecord, Settings } from "../../../shared/types";
 import { api, type Result } from "../api";
 import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, envFineness, fineness, num, params, when, type Entry } from "../format";
-import { Punch } from "./Metal";
+import { Clean, ItemLogo, LibStrip } from "./Metal";
 import { Button, Empty, KindGlyph, PageHead, Sev, Toggle } from "./ui";
 
 const LAYERS: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
 
 function Icon({ item }: { item: Result["items"][number] }) {
-  return item.kind === "app" && item.path ? <img src={api.icon(item.path)} width={28} height={28} alt="" loading="lazy" /> : <KindGlyph kind={item.kind} size={28} />;
+  return <ItemLogo item={item} size={28} />;
 }
 
 // ---------- Inventory ----------
@@ -73,7 +73,7 @@ export function Inventory({ result }: { result: Result }) {
 
 // A small punch with an item's fineness, "base" for a model that runs code.
 function FinePunch({ f }: { f: number | null }) {
-  return <Punch size="s" tone={f === 0 ? "base" : undefined}>{f === null ? "?" : f === 0 ? "base" : f}</Punch>;
+  return <Clean f={f} />;
 }
 
 // ---------- Models ----------
@@ -101,7 +101,7 @@ export function Models({ result }: { result: Result }) {
             const status = m.model?.safeToLoad ? "Safe" : dangerous ? "Runs code" : "Couldn’t be checked";
             return (
               <tr key={m.id} className={m.model?.safeToLoad ? "" : "bad"} onClick={() => (location.hash = `#/item/${encodeURIComponent(m.id)}`)}>
-                <td><a href={`#/item/${encodeURIComponent(m.id)}`} className="mt-name">{m.name}</a><span className="mt-src">{String(m.meta.source ?? "")}</span></td>
+                <td><span className="mt-cell"><ItemLogo item={m} size={24} /><span><a href={`#/item/${encodeURIComponent(m.id)}`} className="mt-name">{m.name}</a><span className="mt-src">{String(m.meta.source ?? "")}</span></span></span></td>
                 <td className="mono">{m.model?.format}</td>
                 <td className="r num-serif">{m.model?.parameters ? params(m.model.parameters) : ""}</td>
                 <td className="mono">{m.model?.quantization ?? ""}</td>
@@ -141,6 +141,7 @@ export function Findings({ result }: { result: Result }) {
               <div className="att-body">
                 <p className="att-title"><b>{a.item.name}</b><span className="muted">{KIND_NAME[a.item.kind]}{a.item.version ? ` ${a.item.version}` : ""}{a.item.meta.envLabel ? `, ${a.item.meta.envLabel}` : ""}</span></p>
                 <p className="att-fix">{a.fix}</p>
+                {a.item.parts.length > 1 && <div className="att-strip"><LibStrip total={a.item.parts.length} bad={new Set(a.vulns.map((f) => `${f.part?.name}@${f.part?.version}@${f.part?.via ?? ""}`)).size} max={300} /></div>}
                 <p className="att-parts muted">{a.codeOnLoad ? a.findings.find((f) => f.kind === "code-on-load")?.evidence : [...new Set(a.vulns.map((f) => `${f.part?.name} ${f.part?.version}`))].slice(0, 4).join(", ") + (new Set(a.vulns.map((f) => f.part?.name)).size > 4 ? " and more" : "")}</p>
               </div>
               <div className="att-side">

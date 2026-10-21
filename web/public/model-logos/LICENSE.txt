@@ -1,0 +1,2 @@
+Model vendor logos from @lobehub/icons-static-svg (https://github.com/lobehub/lobe-icons), MIT License, Copyright (c) LobeHub.
+Logos are trademarks of their respective owners and are used only to identify each model's maker.

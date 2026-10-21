@@ -1,134 +1,162 @@
 import { ArrowRight, FlaskConical } from "lucide-react";
-import { useMemo } from "react";
-import type { Item, Layer, Progress } from "../../../shared/types";
+import { useEffect, useMemo, useRef } from "react";
+import type { Finding, Item, Layer, Progress } from "../../../shared/types";
 import type { Result } from "../api";
-import { LAYER_NAME, attention, entries, envFineness, fineness, macFineness, num, standardOf } from "../format";
-import { Punch } from "./Metal";
-import { Touchstone, type StoneMark } from "./Touchstone";
+import { LAYER_NAME, attention, entries, envFineness, fineness, macFineness, num, params } from "../format";
+import { Clean, ItemLogo, Ticks } from "./Metal";
 import { Button } from "./ui";
 
 const ORDER: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
-const NONE = new Map<string, StoneMark>();
 const ZERO: Record<Layer, { items: number; parts: number }> = {
   apps: { items: 0, parts: 0 }, models: { items: 0, parts: 0 }, extensions: { items: 0, parts: 0 }, packages: { items: 0, parts: 0 }, containers: { items: 0, parts: 0 },
 };
 
 export function Home({ result, progress, live, onRun, open }: { result: Result | null; progress: Progress | null; live: Item[]; onRun: () => void; open: (to: string) => void }) {
   const running = !!progress?.running;
+  const items = running || !result ? live : result.items;
+  const findings: Finding[] = running || !result ? [] : result.findings;
 
-  const done = useMemo(() => {
-    if (!result) return null;
-    const list = attention(result.items, result.findings).filter((a) => a.worst !== "info");
-    const all = entries(list);
-    const fine = new Map(result.items.map((i) => [i.id, fineness(i, result.findings)] as const));
-    // The first five decisions get the assayer's scratch and a number; an install's packages
-    // share one number.
-    const marks = new Map<string, StoneMark>();
-    all.slice(0, 5).forEach((e, k) => {
-      if (e.type === "env") for (const a of e.list) marks.set(a.item.id, { n: k + 1, underline: true });
-      else marks.set(e.a.item.id, { n: k + 1 });
-    });
-    return { list, all, fine, marks, mac: macFineness(result.items, result.findings) };
-  }, [result]);
+  const view = useMemo(() => {
+    const adv = new Map<string, number>();
+    const code = new Set<string>();
+    const flagged = new Set<string>();
+    for (const f of findings) {
+      if (f.severity === "info") continue;
+      flagged.add(f.itemId);
+      if (f.kind === "code-on-load") code.add(f.itemId);
+    }
+    const seen = new Map<string, Set<string>>();
+    for (const f of findings) if (f.advisory) seen.set(f.itemId, (seen.get(f.itemId) ?? new Set()).add(f.advisory.id));
+    for (const [k, v] of seen) adv.set(k, v.size);
+    return { adv, code, flagged, mac: macFineness(items, findings) };
+  }, [items, findings]);
 
   if (!result && !running) {
     return (
-      <article className="home first">
-        <Touchstone items={null} fine={null} marks={NONE} counts={ZERO} />
-        <section className="home-right">
-          <h1 className="verdict">Assay tests every piece of software on this Mac the way gold is tested: down to what it’s made of, against what’s known to be broken.</h1>
-          <p className="lede">Apps, AI models, extensions, packages and containers. Models are read from their bytes, never loaded, and nothing changes until you say so.</p>
-          <Button variant="gold" icon={FlaskConical} onClick={onRun}>Run the first assay</Button>
+      <div className="bench bench-first">
+        <section className="col col-wide first-pane">
+          <p className="lbl"><span>Ready</span><span>nothing read yet</span></p>
+          <h1 className="first-title">Assay reads every piece of software on this Mac, down to the libraries inside it, and checks each one against what’s known to be broken.</h1>
+          <p className="first-body">Apps, AI models, extensions, packages and containers. Models are read from their bytes and never loaded. Nothing changes until you press a key.</p>
+          <Button variant="go" icon={FlaskConical} onClick={onRun}>Run the first assay</Button>
           <p className="fine">To check for known vulnerabilities, Assay sends package names and versions to OSV.dev, an open database of published advisories. Nothing else leaves this Mac, and Settings can turn it off.</p>
         </section>
-      </article>
+      </div>
     );
   }
 
-  if (running || !result || !done) {
-    const counts = progress?.found ?? ZERO;
-    const checking = !!progress?.stage?.startsWith("Checking");
-    const now = checking ? ORDER.length : ORDER.indexOf(progress?.layer ?? "apps");
-    return (
-      <article className="home">
-        <Touchstone items={live} fine={null} marks={NONE} counts={counts} reading />
-        <section className="home-right">
-          <p className="engraved kicker">Assaying</p>
-          <h1 className="verdict running">{progress?.stage ?? "Starting"}<span className="cursor" /></h1>
-          <ol className="steps">
-            {ORDER.map((l, i) => {
-              const state = i < now ? "done" : i === now ? "now" : "wait";
-              return (
-                <li key={l} className={`step ${state}`}>
-                  <span className="step-dot" aria-hidden />
-                  <span className="step-name engraved">{LAYER_NAME[l]}</span>
-                  <span className="step-n">{state === "wait" ? "" : `${num(counts[l].items)}${counts[l].parts ? ` / ${num(counts[l].parts)} libraries` : ""}`}</span>
-                </li>
-              );
-            })}
-            <li className={`step ${checking ? "now" : "wait"}`}>
-              <span className="step-dot" aria-hidden />
-              <span className="step-name engraved">Known vulnerabilities</span>
-              <span className="step-n">{checking ? "asking OSV.dev" : ""}</span>
-            </li>
-          </ol>
-          <p className="fine">The streaks go down raw while Assay reads, and take their metal once every library has been checked. Models are opened at their headers only, so none can run while it’s tested.</p>
-        </section>
-      </article>
-    );
-  }
-
-  const { list, all, fine, marks, mac } = done;
-  const codeModels = list.filter((a) => a.codeOnLoad);
-  const counts = Object.fromEntries(result.layers.map((l) => [l.layer, { items: l.items, parts: l.parts }])) as Record<Layer, { items: number; parts: number }>;
-  const std = standardOf(mac.fine);
-  const year = new Date(result.finishedAt).getFullYear() % 100;
+  const counts = running ? progress?.found ?? ZERO : (Object.fromEntries(result!.layers.map((l) => [l.layer, { items: l.items, parts: l.parts }])) as Record<Layer, { items: number; parts: number }>);
+  const list = result && !running ? attention(result.items, result.findings).filter((a) => a.worst !== "info") : [];
+  const todo = entries(list).slice(0, 4);
+  const apps = items.filter((i) => i.layer === "apps").sort((a, b) => (view.adv.get(b.id) ?? 0) - (view.adv.get(a.id) ?? 0) || a.name.localeCompare(b.name));
+  const models = items.filter((i) => i.layer === "models").sort((a, b) => Number(view.code.has(b.id)) - Number(view.code.has(a.id)) || (b.model?.parameters ?? 0) - (a.model?.parameters ?? 0));
+  const maxP = Math.max(1, ...models.map((m) => m.model?.parameters ?? 0));
+  const flaggedIn = (l: Layer) => items.filter((i) => i.layer === l && view.flagged.has(i.id)).length;
 
   return (
-    <article className="home">
-      <Touchstone items={result.items} fine={fine} marks={marks} counts={counts} macFine={mac.fine} onOpen={(id) => open(`#/item/${encodeURIComponent(id)}`)} />
-      <section className="home-right">
-        <div className="marks" aria-label={`Hallmarks: Assay, ${mac.fine} fine, 20${year}`}>
-          <Punch shape="shield" size="l">A</Punch>
-          <Punch shape="oval" size="l">{mac.fine}</Punch>
-          <Punch shape="square" size="l">{String(year).padStart(2, "0")}</Punch>
-        </div>
-        <p className="grade">{std.fine ? `${std.name} standard` : "Below standard"}</p>
-        <h1 className="verdict">
-          This Mac assays at {mac.fine} fine: {num(result.items.length)} pieces of software built from {num(mac.total)} libraries
-          {codeModels.length ? <>, and {codeModels.length === 1 ? "one AI model" : `${codeModels.length} AI models`} that would run code when loaded.</> : "."}
-        </h1>
-        <p className="expl">{num(mac.total - mac.bad)} of its {num(mac.total)} libraries have nothing published against them. The rest show on the stone in rose and copper.</p>
-        {!result.vulnCheck.ran && (
-          <p className="fine warn">{result.vulnCheck.error ? `The vulnerability check couldn’t reach OSV.dev: ${result.vulnCheck.error}.` : "The online vulnerability check is off, so only model findings are counted."}</p>
+    <div className="bench">
+      <section className="col col-left">
+        <p className="lbl"><span>Clean share</span><span>{running ? "reading" : "per 1,000 libraries"}</span></p>
+        <div className="readout-big">{running ? "···" : view.mac.fine}<sup>‰</sup></div>
+        <p className="readout-note">
+          {running ? progress?.stage ?? "Starting" : <>{num(view.mac.total - view.mac.bad)} of {num(view.mac.total)} libraries have nothing published against them{view.code.size ? <>, and <b>{view.code.size === 1 ? "one model runs code" : `${view.code.size} models run code`}</b> when loaded.</> : "."}</>}
+        </p>
+        <p className="lbl"><span>Layers</span><span>items / flagged</span></p>
+        {ORDER.map((l) => {
+          const now = running && progress?.layer === l;
+          return (
+            <div className={`meter${now ? " now" : ""}`} key={l}>
+              <p className="meter-row"><span>{LAYER_NAME[l]}</span><span>{num(counts[l].items)}{running ? "" : ` / ${flaggedIn(l)} flagged`}</span></p>
+              <Ticks total={counts[l].items} flagged={running ? 0 : flaggedIn(l)} />
+            </div>
+          );
+        })}
+        {!running && result && !result.vulnCheck.ran && (
+          <p className="fine warn">{result.vulnCheck.error ? `OSV.dev couldn’t be reached: ${result.vulnCheck.error}.` : "The online check is off, so only models are judged."}</p>
         )}
-
-        {all.length > 0 && (
-          <div className="attention">
-            <h2 className="engraved h-engraved">Start here</h2>
-            <ol className="first-list">
-              {all.slice(0, 5).map((e, n) => {
-                const key = e.type === "env" ? e.key : e.a.item.id;
+        {todo.length > 0 && (
+          <>
+            <p className="lbl lbl-gap"><span>Start here</span><span>{num(list.length)} in all</span></p>
+            <ol className="todo">
+              {todo.map((e) => {
                 const to = e.type === "env" ? "#/findings" : `#/item/${encodeURIComponent(e.a.item.id)}`;
-                const name = e.type === "env" ? e.label : e.a.item.name;
-                const fix = e.type === "env" ? e.fix : e.a.fix;
-                const f = e.type === "env" ? envFineness(result.items, result.findings, e.key) : fine.get(e.a.item.id) ?? null;
+                const f = e.type === "env" ? envFineness(result!.items, result!.findings, e.key) : fineness(e.a.item, result!.findings);
                 return (
-                  <li key={key}>
-                    <button className="first-row" onClick={() => open(to)}>
-                      <Punch size="s" tone={f === 0 ? "base" : undefined}>{f === null ? "?" : f === 0 ? "base" : f}</Punch>
-                      <span className="first-text"><b><span className="first-n">{n + 1}</span>{name}</b><span>{fix}</span></span>
+                  <li key={e.type === "env" ? e.key : e.a.item.id}>
+                    <button onClick={() => open(to)}>
+                      <span className="todo-text"><b>{e.type === "env" ? e.label : e.a.item.name}</b><span>{e.type === "env" ? e.fix : e.a.fix}</span></span>
+                      <Clean f={f} />
                     </button>
                   </li>
                 );
               })}
             </ol>
-            {all.length > 5 && (
-              <button className="link-more" onClick={() => open("#/findings")}>Everything that needs attention, {num(list.length)} in all <ArrowRight size={14} aria-hidden /></button>
-            )}
-          </div>
+            <button className="link-more" onClick={() => open("#/findings")}>All findings <ArrowRight size={13} aria-hidden /></button>
+          </>
         )}
       </section>
-    </article>
+
+      <section className="col col-mid">
+        <p className="lbl"><span>Apps <b>{num(counts.apps.items)}</b></span><span>{running ? "as read" : "most advisories first"}</span></p>
+        <div className="icon-grid">
+          {apps.map((a, k) => {
+            const n = view.adv.get(a.id);
+            return (
+              <button key={a.id} className={`icon-cell${n ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(a.id)}`)} title={`${a.name}${n ? `: ${n} advisories` : ""}`}>
+                <ItemLogo item={a} size={30} />
+                <span className="ix">{String(k + 1).padStart(2, "0")}</span>
+                {n ? <span className="cnt">{n}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+        <p className="lbl lbl-gap"><span>AI models <b>{num(counts.models.items)}</b></span><span>parameters</span></p>
+        <div className="model-rows">
+          {models.map((m) => {
+            const x = view.code.has(m.id);
+            return (
+              <button key={m.id} className={`model-row${x ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(m.id)}`)}>
+                <ItemLogo item={m} size={22} />
+                <b>{m.name}</b>
+                <span className="mr-meta">{x ? "Runs code" : [params(m.model?.parameters), m.model?.quantization].filter(Boolean).join("  ")}</span>
+                <span className="mr-bar"><i style={{ width: `${x ? 100 : Math.max(2, ((m.model?.parameters ?? 0) / maxP) * 100)}%` }} /></span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="col col-right">
+        <ReadLog items={items} adv={view.adv} code={view.code} running={running} assay={result?.id} />
+      </section>
+    </div>
+  );
+}
+
+// Everything in the order it was read, with the real time it took to get there.
+function ReadLog({ items, adv, code, running, assay }: { items: Item[]; adv: Map<string, number>; code: Set<string>; running: boolean; assay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rows = useMemo(() => [...items].sort((a, b) => Number(a.meta.readAt ?? 0) - Number(b.meta.readAt ?? 0)), [items]);
+  useEffect(() => {
+    if (running && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [rows.length, running]);
+  return (
+    <>
+      <p className="lbl"><span>Read log</span><span>{running ? "live" : assay ? `assay ${assay}` : ""}</span></p>
+      <div className="log" ref={ref}>
+        {rows.map((i) => {
+          const parts = i.parts.length || Number(i.meta.partCount ?? 0);
+          const x = code.has(i.id) || adv.has(i.id);
+          const t = i.meta.readAt === undefined ? "" : `+${(Number(i.meta.readAt) / 1000).toFixed(2)}s`;
+          return (
+            <div key={i.id} className={x ? "x" : undefined}>
+              <span className="log-t">{t}</span>
+              <span className="log-n">{i.name}</span>
+              <span className="log-v">{code.has(i.id) ? "code" : adv.has(i.id) ? `${adv.get(i.id)} adv` : parts > 1 ? `${num(parts)} libs` : "ok"}</span>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }

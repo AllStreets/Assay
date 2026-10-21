@@ -4,7 +4,8 @@ import type { Finding, Item, Part } from "../../../shared/types";
 import { api, type Result } from "../api";
 import { KIND_NAME, LAYER_NAME, SEVERITY_RANK, attention, bytes, fineness, num, params } from "../format";
 import { ModelXray } from "./ModelXray";
-import { Button, Dialog, Hallmarks, KindGlyph, Sev } from "./ui";
+import { Clean, ItemLogo, LibStrip } from "./Metal";
+import { Button, Dialog, KindGlyph, Sev } from "./ui";
 
 type Act = "quarantine" | "trash" | "update";
 
@@ -134,13 +135,16 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
   return (
     <article className="page item">
       <a className="back" href={item.layer === "models" ? "#/models" : "#/inventory"}><ArrowLeft size={15} aria-hidden /> {item.layer === "models" ? "AI models" : "Inventory"}</a>
-      <Hallmarks kind={item.kind} fine={fineness(item, result.findings)} assay={result.id} />
       <header className="item-head">
-        {item.kind === "app" && item.path ? <img src={api.icon(item.path)} width={64} height={64} alt="" /> : <KindGlyph kind={item.kind} size={64} />}
+        <ItemLogo item={item} size={64} />
         <div>
           <h1>{item.name}</h1>
           {item.meta.envLabel ? <p className="env">Installed in {String(item.meta.envLabel)}</p> : null}
           {item.path && <code className="path">{item.path.replace(/^\/Users\/[^/]+/, "~")}</code>}
+        </div>
+        <div className="item-read">
+          <Clean f={fineness(item, result.findings)} size="m" />
+          <span>{fineness(item, result.findings) === 0 ? "runs code when loaded" : "clean, per 1,000 libraries"}</span>
         </div>
         <div className="item-actions">
           {actions.includes("update") && <Button variant="gold" icon={RefreshCw} onClick={() => setConfirm("update")}>Update</Button>}
@@ -181,6 +185,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
           {item.parts.length > 0 && (
             <div className="cert-block">
               <h2 className="h3">{num(item.parts.length)} {item.parts.length === 1 ? "part" : "parts"} inside</h2>
+              <div className="cert-strip"><LibStrip total={item.parts.length} bad={libs.length} /></div>
               {[...groups.entries()].map(([eco, ps]) => (
                 <details key={eco} className="parts" open={ps.length < 12}>
                   <summary>{eco === "framework" ? "Frameworks" : eco === "PyPI" ? "Python packages" : eco === "npm" ? "npm packages" : eco} <span className="muted">{num(ps.length)}</span></summary>

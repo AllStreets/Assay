@@ -223,3 +223,19 @@ export const STANDARDS: { fine: number; name: string; metal: Metal }[] = [
 ];
 
 export const standardOf = (f: number) => STANDARDS.find((s) => f >= s.fine) ?? STANDARDS[STANDARDS.length - 1];
+
+// The maker of a model, from its name and architecture, for its logo. Unknown makers get none.
+export function modelVendor(i: Item): string | null {
+  if (i.layer !== "models") return null;
+  const n = `${i.name} ${i.model?.architecture ?? ""}`.toLowerCase();
+  if (n.includes("gpt-oss") || n.includes("openai")) return "openai";
+  if (n.includes("qwen")) return "qwen-color";
+  if (n.includes("llama")) return "meta-color";
+  if (n.includes("gemma")) return "gemma-color";
+  if (n.includes("mistral") || n.includes("mixtral")) return "mistral-color";
+  if (n.includes("deepseek")) return "deepseek-color";
+  if (n.includes("phi")) return "microsoft-color";
+  if (n.includes("nemotron")) return "nvidia-color";
+  if (i.kind === "hf-model" || n.includes("bert") || n.includes("bart")) return "huggingface-color";
+  return null;
+}

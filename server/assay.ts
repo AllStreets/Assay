@@ -71,6 +71,8 @@ async function runAssay(): Promise<AssayResult> {
   const onItem = (i: Item) => {
     items.push(i);
     if (isHidden(i)) return;
+    // When it was read, in milliseconds from the start: the read log shows real timings.
+    i.meta.readAt = Date.now() - startedAt;
     seen.push({ ...i, parts: [], meta: { ...i.meta, partCount: i.parts.length } });
     progress.found[i.layer].items++;
     progress.found[i.layer].parts += i.parts.length;

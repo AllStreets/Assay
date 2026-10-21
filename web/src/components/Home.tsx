@@ -1,7 +1,9 @@
 import { ArrowRight, FlaskConical, ShieldCheck } from "lucide-react";
 import type { Layer, Progress } from "../../../shared/types";
 import type { Result } from "../api";
-import { attention, num } from "../format";
+import { LAYER_NAME, attention, num } from "../format";
+
+const ORDER: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
 import { CoreSample, type Mark } from "./CoreSample";
 import { Button, KindGlyph, Sev } from "./ui";
 import { api } from "../api";
@@ -32,6 +34,7 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
     const counts = progress?.found ?? ZERO;
     const total = Object.values(counts).reduce((a, c) => a + c.items, 0);
     const parts = Object.values(counts).reduce((a, c) => a + c.parts, 0);
+    const checking = !!progress?.stage?.startsWith("Checking");
     return (
       <article className="home">
         <CoreSample counts={counts} marks={[]} drilling={progress?.layer ?? "apps"} />
@@ -39,6 +42,24 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
           <p className="phase"><span>ASSAYING</span><b>{num(total)} PIECES</b><b>{num(parts)} LIBRARIES</b></p>
           <h1 className="verdict running">{progress?.stage ?? "Starting"}<span className="cursor" /></h1>
           <p className="lede">Each layer fills in as it’s read. Models are opened at their headers only, so a malicious one can’t run while it’s checked.</p>
+          <ol className="steps">
+            {ORDER.map((l, i) => {
+              const now = checking ? ORDER.length : ORDER.indexOf(progress?.layer ?? "apps");
+              const state = i < now ? "done" : i === now ? "now" : "wait";
+              return (
+                <li key={l} className={`step ${state}`}>
+                  <span className="step-dot" aria-hidden />
+                  <span className="step-name">{LAYER_NAME[l]}</span>
+                  <span className="step-n">{state === "wait" ? "" : `${num(counts[l].items)}${counts[l].parts ? `  with ${num(counts[l].parts)} libraries` : ""}`}</span>
+                </li>
+              );
+            })}
+            <li className={`step ${checking ? "now" : "wait"}`}>
+              <span className="step-dot" aria-hidden />
+              <span className="step-name">Checking against OSV.dev</span>
+              <span className="step-n" />
+            </li>
+          </ol>
         </section>
       </article>
     );

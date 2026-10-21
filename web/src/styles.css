@@ -442,3 +442,14 @@ a.att-card:hover { border-color: #4a443d; background: var(--basalt-3); }
 .stamp, .phase { display: flex; flex-wrap: wrap; column-gap: 2.4em; row-gap: 4px; white-space: nowrap; }
 @media (max-width: 1080px) { .top-stamp { display: none; } }
 @media (max-width: 640px) { .att-row { grid-template-columns: 34px minmax(0, 1fr); } .att-meta { grid-column: 2; flex-direction: row; align-items: center; gap: 10px; } }
+
+/* Live steps while an assay runs */
+.steps { display: flex; flex-direction: column; max-width: 520px; margin-top: 8px; border-top: 1px solid var(--rule-2); }
+.step { display: grid; grid-template-columns: 18px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule-2); font-size: 14.5px; color: #6b645a; transition: color 0.3s; }
+.step-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; justify-self: center; }
+.step-n { font: 400 12.5px var(--mono); white-space: pre; }
+.step.done { color: var(--bone-2); }
+.step.done .step-dot { background: var(--verdigris); border-color: var(--verdigris); }
+.step.now { color: var(--bone); }
+.step.now .step-dot { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px var(--gold); animation: pulse 1.2s ease-in-out infinite; }
+.step.now .step-n { color: var(--gold); }

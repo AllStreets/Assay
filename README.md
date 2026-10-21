@@ -29,7 +29,7 @@ On the Mac in these screenshots, Assay read **372 pieces of software built from 
 
 ## The first ten seconds
 
-<img src="docs/screens/home.png" alt="Assay's home screen: a core sample of the Mac in layers, a one-sentence verdict, and what to do first" />
+<img src="docs/screens/running.png" alt="An assay in progress: the core sample drilled down to the packages layer, with each layer's count filling in beside it" />
 
 The home screen is a core sample of your Mac, drilled while it reads. Apps, extensions, packages and containers settle into layers as they're found, and the AI models run through all of them as a gold vein, because models now turn up everywhere: in Ollama, in the Hugging Face cache, in an app's resources, in your Downloads folder.
 

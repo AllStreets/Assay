@@ -1,5 +1,5 @@
 // The small set of controls every Assay page is built from.
-import { AppWindow, Beer, Container, Gem, Package, Puzzle, SquareCode, type LucideIcon } from "lucide-react";
+import { AppWindow, Beer, Container, Gem, LoaderCircle, Package, Puzzle, SquareCode, type LucideIcon } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import type { Severity } from "../../../shared/types";
 import { SEVERITY_NAME } from "../format";
@@ -9,7 +9,7 @@ type Variant = "gold" | "ghost" | "danger" | "quiet";
 export function Button({ variant = "ghost", icon: Icon, busy, children, ...rest }: { variant?: Variant; icon?: LucideIcon; busy?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button {...rest} className={`btn btn-${variant}${rest.className ? ` ${rest.className}` : ""}`} disabled={rest.disabled || busy} aria-busy={busy || undefined}>
-      {Icon && <Icon size={15} aria-hidden className={busy ? "spin" : undefined} />}
+      {busy ? <LoaderCircle size={15} aria-hidden className="spin" /> : Icon && <Icon size={15} aria-hidden />}
       {children}
     </button>
   );

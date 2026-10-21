@@ -162,3 +162,30 @@ export interface ActionResult {
   message: string;
   undo?: string;
 }
+
+// ---------- Changes between assays ----------
+export interface ChangeItem {
+  id: string;
+  name: string;
+  kind: string;
+  layer: string;
+  version?: string;
+  install?: string;
+  advisories: number;
+  runsCode?: boolean;
+  fromVersion?: string;
+  fixed?: string[];
+  introduced?: string[];
+}
+
+export interface Change {
+  from: number;
+  to: number;
+  at: number;
+  cleanBefore: number;
+  cleanAfter: number;
+  added: ChangeItem[];
+  removed: ChangeItem[];
+  updated: ChangeItem[];
+  newlyPublished: ChangeItem[];
+}

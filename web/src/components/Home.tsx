@@ -1,7 +1,7 @@
 import { ArrowRight, FlaskConical } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
-import type { Finding, Item, Layer, Progress, Severity } from "../../../shared/types";
-import type { Result } from "../api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Change, Finding, Item, Layer, Progress, Severity } from "../../../shared/types";
+import { api, type Result } from "../api";
 import { LAYER_NAME, SEVERITY_RANK, attention, entries, envFineness, fineness, macFineness, num, params } from "../format";
 import { Clean, ItemLogo, LibStrip, Ticks } from "./Metal";
 import { Button, Sev } from "./ui";
@@ -13,6 +13,10 @@ const ZERO: Record<Layer, { items: number; parts: number }> = {
 
 export function Home({ result, progress, live, onRun, open }: { result: Result | null; progress: Progress | null; live: Item[]; onRun: () => void; open: (to: string) => void }) {
   const running = !!progress?.running;
+  const [latest, setLatest] = useState<Change | null>(null);
+  useEffect(() => {
+    api.changes().then((l) => setLatest(l.find((c) => c.added.length || c.removed.length || c.updated.length || c.newlyPublished.length) ?? null), () => {});
+  }, [result?.id]);
   const items = running || !result ? live : result.items;
   const findings: Finding[] = running || !result ? [] : result.findings;
 
@@ -64,6 +68,7 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
         <p className="readout-note">
           {running ? progress?.stage ?? "Starting" : <>{num(view.mac.total - view.mac.bad)} of {num(view.mac.total)} libraries have nothing published against them{view.code.size ? <>, and <b>{view.code.size === 1 ? "one model runs code" : `${view.code.size} models run code`}</b> when loaded.</> : "."}</>}
         </p>
+        {!running && latest && <SinceLast c={latest} open={open} />}
         <p className="lbl"><span>Layers</span><span>items / flagged</span></p>
         {ORDER.map((l) => {
           const now = running && progress?.layer === l;
@@ -259,4 +264,22 @@ function installRows(items: Item[], findings: Finding[]): EnvRow[] {
     m.set(label, r);
   }
   return [...m.values()].map((r) => ({ ...r, fine: Math.min(999, Math.max(1, Math.floor(((r.total - r.flagged) / r.total) * 1000))) })).sort((a, b) => b.flagged - a.flagged || b.total - a.total);
+}
+
+// The most recent assay that found something different from the one before it.
+function SinceLast({ c, open }: { c: Change; open: (to: string) => void }) {
+  const fixed = c.updated.reduce((n, u) => n + (u.fixed?.length ?? 0), 0);
+  const brought = c.updated.reduce((n, u) => n + (u.introduced?.length ?? 0), 0) + c.newlyPublished.reduce((n, u) => n + (u.introduced?.length ?? 0), 0);
+  const delta = c.cleanAfter - c.cleanBefore;
+  const bits = [c.updated.length && `${c.updated.length} updated`, c.added.length && `${c.added.length} arrived`, c.removed.length && `${c.removed.length} gone`].filter(Boolean).join(", ");
+  return (
+    <button className="since" onClick={() => open("#/changes")}>
+      <span className="lbl"><span>Since assay {c.from}</span><span>{delta === 0 ? "no change" : `${delta > 0 ? "+" : ""}${delta}‰`}</span></span>
+      <span className="since-line">
+        {fixed > 0 && <b className="ok">{fixed} fixed</b>}
+        {brought > 0 && <b className="flag">{brought} new {brought === 1 ? "advisory" : "advisories"}</b>}
+        <span>{bits || "No software changed"}</span>
+      </span>
+    </button>
+  );
 }

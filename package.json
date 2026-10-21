@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -k -n engine,web -c yellow,magenta \"tsx watch server/index.ts\" \"vite\"",
     "build": "vite build",
-    "test": "tsx --test server/**/*.test.ts",
+    "test": "tsx --test server/*.test.ts server/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build:engine": "./scripts/build-engine.sh",
     "app": "vite build && ./scripts/build-engine.sh && tauri build --bundles app",

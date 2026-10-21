@@ -4,7 +4,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import type { AssayResult, Finding, Item, QuarantineRecord } from "../shared/types.js";
+import type { AssayResult, Change, Finding, Item, QuarantineRecord } from "../shared/types.js";
 
 const PORT = process.env.ASSAY_PORT ?? "4720";
 const ENGINE = `http://127.0.0.1:${PORT}`;
@@ -111,6 +111,21 @@ server.registerTool("list_models", {
 }, async () => {
   const r = await result();
   return text(r.items.filter((i) => i.layer === "models").map((m) => ({ name: m.name, source: m.meta.source, format: m.model?.format, parameters: m.model?.parameters, quantization: m.model?.quantization, safeToLoad: m.model?.safeToLoad, path: m.path })));
+});
+
+server.registerTool("recent_changes", {
+  description: "What changed between recent assays: software that arrived or left, updates and the advisories each fixed or brought in, advisories newly published against unchanged software, and how the clean share moved.",
+  inputSchema: { limit: z.number().int().min(1).max(20).optional() },
+}, async ({ limit }) => {
+  const list = await call<Change[]>("/api/changes");
+  const shown = list.filter((c) => c.added.length || c.removed.length || c.updated.length || c.newlyPublished.length).slice(0, limit ?? 5);
+  return text(shown.length ? shown.map((c) => ({
+    from: c.from, to: c.to, at: new Date(c.at).toISOString(), cleanShare: `${c.cleanBefore} to ${c.cleanAfter} per 1,000`,
+    updated: c.updated.map((u) => ({ name: u.name, from: u.fromVersion, to: u.version, fixed: u.fixed, introduced: u.introduced })),
+    newlyPublished: c.newlyPublished.map((u) => ({ name: u.name, version: u.version, advisories: u.introduced })),
+    arrived: c.added.map((u) => ({ name: u.name, kind: u.kind, advisories: u.advisories, runsCode: u.runsCode })),
+    gone: c.removed.map((u) => u.name),
+  })) : "No changes recorded yet. Run another assay after something updates.");
 });
 
 server.registerTool("run_assay", {

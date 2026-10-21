@@ -9,6 +9,7 @@ import { RESULT_FILE } from "./paths.js";
 import { getSettings, readJson, writeJson } from "./store.js";
 import { check, checkable } from "./vuln/osv.js";
 import { attachReach } from "./grants.js";
+import { record } from "./history.js";
 
 const LAYERS: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
 const empty = () => Object.fromEntries(LAYERS.map((l) => [l, { items: 0, parts: 0 }])) as Progress["found"];
@@ -128,6 +129,7 @@ async function runAssay(): Promise<AssayResult> {
   };
   if (containers.note) result.notes = [containers.note];
   await writeJson(RESULT_FILE, result);
+  await record(prev, result).catch(() => {});
   last = result;
   progress = { running: false, found: progress.found, stage: "Done", startedAt };
   return result;

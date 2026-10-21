@@ -75,6 +75,10 @@ A flaw in an app that can't touch anything matters less than the same flaw in on
 
 Assay keeps watching after an assay ends. When a new app lands in Applications, or a new model in Ollama, the Hugging Face cache or one of your model folders, Assay reads it right away, before anything opens or loads it, and tells you what it found. Downloaded apps that have never been opened are marked as such, so everything on their page was read without running them. A malicious pickle gets caught on the way in, not after it's loaded.
 
+## What changed
+
+Every assay is compared with the one before it. The Changes page lists what arrived and what left, every update with the advisories it fixed or brought in, and advisories newly published against software you already had, along with how the clean share moved. The overview shows the latest of these at a glance, and the menu bar turns each into a notification: "Updates fixed 37 known advisories", or a model that arrived and would run code if loaded.
+
 ## Every install, not just the first on your PATH
 
 Macs collect installs: Node from Homebrew and three versions from nvm, Python from Homebrew, python.org, Anaconda and Apple's developer tools. A terminal only sees the first one on its PATH, and a Mac app sees a different PATH again. Assay finds each one, runs its own `npm` or `pip` in a clean environment so one install's settings can't leak into another's, and labels every package with the install it lives in. When pip itself crashes on a malformed package, as Anaconda's does here, Assay reads Python's own package metadata instead.
@@ -107,7 +111,7 @@ npm run build:mcp
 claude mcp add assay -- node "$(pwd)/build/assay-mcp.mjs"
 ```
 
-Tools: `summary`, `list_findings`, `get_item`, `which_carry`, `list_models`, `run_assay`, `quarantine`, `release`. The server reads everything from the running Assay engine, so open the app first.
+Tools: `summary`, `list_findings`, `get_item`, `which_carry`, `list_models`, `recent_changes`, `run_assay`, `quarantine`, `release`. The server reads everything from the running Assay engine, so open the app first.
 
 ## How it knows
 
@@ -179,6 +183,7 @@ Then open http://localhost:4721. The first assay takes about half a minute. Afte
 | `server/vuln/osv.ts` | Batched OSV.dev lookups with an on-disk cache |
 | `server/findings.ts` | Turns what was read into findings and severities |
 | `server/grants.ts` | Reads the permissions you've granted from macOS's TCC records |
+| `server/history.ts` | Compares each assay with the last and keeps what changed |
 | `server/watch.ts` | Watches for new apps and models and checks them before first run |
 | `server/actions.ts` | Quarantine, release, update, trash, reveal, and handing over to Teardown |
 | `server/mcp.ts` | The MCP server for AI agents |

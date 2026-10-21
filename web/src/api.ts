@@ -1,4 +1,4 @@
-import type { ActionResult, AssayResult, Progress, QuarantineRecord, Settings } from "../../shared/types";
+import type { ActionResult, AssayResult, Change, Progress, QuarantineRecord, Settings } from "../../shared/types";
 
 export type Result = AssayResult & { actions: Record<string, string[]> };
 
@@ -30,6 +30,7 @@ export const api = {
   specimen: () => post<{ path: string }>("/api/specimen"),
   teardown: () => call<{ installed: boolean }>("/api/teardown"),
   openInTeardown: (itemId: string | null, page?: "permissions" | "changes") => post<ActionResult>("/api/actions/teardown", { itemId, page }),
+  changes: () => call<Change[]>("/api/changes"),
   openData: () => post<void>("/api/open-data"),
   about: () => call<{ version: string; dataDir: string }>("/api/about"),
   icon: (path: string) => `/api/icon?path=${encodeURIComponent(path)}`,

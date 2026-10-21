@@ -5,6 +5,7 @@ import { actionsFor, openApp, openInTeardown, quarantine, quarantined, release, 
 import { getProgress, lastResult, startAssay } from "./assay.js";
 import { writeSpecimen } from "./models/specimen.js";
 import { noticesSince } from "./notices.js";
+import { changes } from "./history.js";
 import { startWatching } from "./watch.js";
 import { CACHE_DIR, DATA_DIR, DIST_DIR, PORT, VERSION } from "./paths.js";
 import { readPlist, run } from "./run.js";
@@ -55,6 +56,7 @@ app.get("/api/progress", wrap(async (req, res) => {
 
 app.get("/api/teardown", wrap(async (_req, res) => res.json({ installed: await teardownInstalled() })));
 app.post("/api/actions/teardown", wrap(async (req, res) => res.json(await openInTeardown(req.body?.itemId, req.body?.page))));
+app.get("/api/changes", wrap(async (_req, res) => res.json(await changes())));
 app.get("/api/notifications", wrap(async (req, res) => res.json(await noticesSince(Number(req.query.since) || 0))));
 
 app.get("/api/settings", wrap(async (_req, res) => res.json(await getSettings())));

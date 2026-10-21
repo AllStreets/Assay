@@ -512,3 +512,31 @@ a.att-card:hover .att-title b { color: var(--hot); }
 .arrivals button:hover b { color: var(--hot); }
 .arrival-note p { color: var(--ink) !important; }
 .td-keys { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+/* Changes */
+.since { display: block; width: 100%; margin: -8px 0 22px; padding: 10px 12px; text-align: left; background: var(--well); border: 0; border-radius: 8px; cursor: pointer; }
+.since .lbl { margin-bottom: 4px; }
+.since:hover .since-line span { color: var(--ink); }
+.since-line { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; color: var(--ink-2); }
+.since-line b, .ch-facts b, .ch-note b { font-weight: 600; }
+.change { margin-bottom: 40px; padding-top: 18px; border-top: 1.5px solid var(--frame); }
+.ch-head { margin-bottom: 18px; }
+.ch-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 26px; }
+.ch-clean { display: inline-flex; align-items: center; gap: 8px; font: var(--disp-weight) 38px/1 var(--disp); letter-spacing: var(--disp-track); }
+.ch-clean i { font: 400 14px var(--mono); font-style: normal; color: var(--ink-3); margin-left: -6px; }
+.ch-clean em { font: 600 13px var(--mono); font-style: normal; padding: 2px 7px; border-radius: 5px; margin-left: 6px; }
+.ch-clean em.up { color: var(--ok); background: var(--well); }
+.ch-clean em.down { color: var(--hot); background: var(--hot-soft); }
+.ch-facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--ink-2); }
+.ch-list { border-top: 1px solid var(--line); margin-bottom: 20px; }
+.ch-list li { border-bottom: 1px solid var(--line); }
+.ch-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 4px; }
+a.ch-row:hover { background: var(--hot-soft); }
+.ch-name { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ch-name b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-name span { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+.ch-note { font: 400 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.ch-note.hot { color: var(--hot); }
+.ch-note b.ok, .ch-facts b.ok, .since-line b.ok { color: var(--ok); }
+.ch-note b.flag, .ch-facts b.flag, .since-line b.flag { color: var(--hot); }
+.changes-quiet { margin-top: 10px; }

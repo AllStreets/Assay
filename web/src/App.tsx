@@ -4,13 +4,14 @@ import type { Item, Progress } from "../../shared/types";
 import { api, type Result } from "./api";
 import { Home } from "./components/Home";
 import { ItemView } from "./components/ItemView";
-import { Findings, Inventory, Models, Quarantine, SettingsPage } from "./components/Pages";
+import { Changes, Findings, Inventory, Models, Quarantine, SettingsPage } from "./components/Pages";
 import { Button } from "./components/ui";
 import { num, when } from "./format";
 
 const TABS = [
   ["#/", "overview"],
   ["#/findings", "findings"],
+  ["#/changes", "changes"],
   ["#/models", "models"],
   ["#/inventory", "inventory"],
   ["#/quarantine", "quarantine"],
@@ -94,6 +95,7 @@ export function App() {
   else if (route === "#/" || running || (!result && !route.startsWith("#/settings"))) page = <Home result={result} progress={progress} live={liveItems} onRun={run} open={go} />;
   else if (route.startsWith("#/item/") && result) page = <ItemView key={route} result={result} id={decodeURIComponent(route.slice(7))} onChanged={refresh} />;
   else if (route === "#/findings" && result) page = <Findings result={result} />;
+  else if (route === "#/changes") page = <Changes result={result} />;
   else if (route === "#/models" && result) page = <Models result={result} />;
   else if (route === "#/inventory" && result) page = <Inventory result={result} />;
   else if (route === "#/quarantine") page = <Quarantine onChanged={refresh} />;

@@ -1,6 +1,6 @@
-import { FlaskConical, FolderOpen, Lock, PackageOpen, Search, ShieldCheck, Unlock } from "lucide-react";
+import { ArrowRight, FlaskConical, FolderOpen, Lock, PackageOpen, Search, ShieldCheck, Unlock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Layer, QuarantineRecord, Settings } from "../../../shared/types";
+import type { Change, ChangeItem, Layer, QuarantineRecord, Settings } from "../../../shared/types";
 import { api, type Result } from "../api";
 import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, envFineness, fineness, REACH_LABEL, STRONG_REACH, reachOf, num, params, when, type Entry } from "../format";
 import { Clean, ItemLogo, LibStrip } from "./Metal";
@@ -294,5 +294,79 @@ export function SettingsPage({ result }: { result: Result | null }) {
         <div className="row"><div><p className="row-title">Hidden items</p>{s.hiddenItems.length ? <details className="hidden-list"><summary className="row-desc">{s.hiddenItems.length} {s.hiddenItems.length === 1 ? "item is" : "items are"} left out of every assay</summary><ul>{s.hiddenItems.map((h) => <li key={h}><code>{h.replace(/^\/Users\/[^/]+/, "~")}</code></li>)}</ul></details> : <p className="row-desc">Nothing is hidden.</p>}</div>{s.hiddenItems.length > 0 && <Button variant="quiet" onClick={() => save({ hiddenItems: [] })}>Show them again</Button>}</div>
       </section>
     </article>
+  );
+}
+
+// ---------- Changes ----------
+
+export function Changes({ result }: { result: Result | null }) {
+  const [list, setList] = useState<Change[] | null>(null);
+  useEffect(() => {
+    api.changes().then(setList, () => setList([]));
+  }, [result?.id]);
+  const byId = new Map((result?.items ?? []).map((i) => [i.id, i]));
+  const shown = (list ?? []).filter((c) => c.added.length || c.removed.length || c.updated.length || c.newlyPublished.length);
+  const quiet = (list?.length ?? 0) - shown.length;
+  return (
+    <article className="page">
+      <PageHead title="Changes" meta="What changed between one assay and the next: software that arrived or left, updates and the advisories they fixed or brought in, and advisories newly published against software you already had." />
+      {list && !shown.length && <Empty icon={ShieldCheck} title="Nothing has changed yet">Assay compares each assay with the one before it. Run another after an app or package updates and the difference shows up here.</Empty>}
+      {shown.map((c) => <ChangeBlock key={c.to} c={c} byId={byId} />)}
+      {quiet > 0 && <p className="fine changes-quiet">{quiet} other {quiet === 1 ? "assay" : "assays"} found nothing different.</p>}
+    </article>
+  );
+}
+
+function ChangeBlock({ c, byId }: { c: Change; byId: Map<string, Result["items"][number]> }) {
+  const fixed = c.updated.reduce((n, u) => n + (u.fixed?.length ?? 0), 0);
+  const brought = c.updated.reduce((n, u) => n + (u.introduced?.length ?? 0), 0) + c.newlyPublished.reduce((n, u) => n + (u.introduced?.length ?? 0), 0);
+  const delta = c.cleanAfter - c.cleanBefore;
+  const Row = ({ i, note, hot }: { i: ChangeItem; note: React.ReactNode; hot?: boolean }) => {
+    const live = byId.get(i.id);
+    const body = (
+      <>
+        {live ? <ItemLogo item={live} size={24} /> : <KindGlyph kind={i.kind} size={24} />}
+        <span className="ch-name"><b>{i.name}</b><span>{KIND_NAME[i.kind as keyof typeof KIND_NAME] ?? i.kind}{i.install ? `, ${i.install}` : ""}</span></span>
+        <span className={`ch-note${hot ? " hot" : ""}`}>{note}</span>
+      </>
+    );
+    return <li>{live ? <a className="ch-row" href={`#/item/${encodeURIComponent(i.id)}`}>{body}</a> : <span className="ch-row">{body}</span>}</li>;
+  };
+  return (
+    <section className="change">
+      <header className="ch-head">
+        <span className="lbl"><span>Assay {c.from} to {c.to}</span><span>{new Date(c.at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span></span>
+        <div className="ch-sum">
+          <span className="ch-clean">{c.cleanBefore}<i>‰</i> <ArrowRight size={16} aria-hidden /> {c.cleanAfter}<i>‰</i>{delta !== 0 && <em className={delta > 0 ? "up" : "down"}>{delta > 0 ? "+" : ""}{delta}</em>}</span>
+          <span className="ch-facts">
+            {fixed > 0 && <b className="ok">{fixed} fixed</b>}
+            {brought > 0 && <b className="flag">{brought} new {brought === 1 ? "advisory" : "advisories"}</b>}
+            {c.updated.length > 0 && <span>{c.updated.length} updated</span>}
+            {c.added.length > 0 && <span>{c.added.length} arrived</span>}
+            {c.removed.length > 0 && <span>{c.removed.length} gone</span>}
+          </span>
+        </div>
+      </header>
+      {c.updated.length > 0 && (
+        <><h2 className="h2">Updated</h2><ul className="ch-list">{c.updated.map((u) => (
+          <Row key={u.id} i={u} hot={!!u.introduced?.length && !u.fixed?.length} note={<>{u.fromVersion ?? "?"} to {u.version ?? "?"}{u.fixed?.length ? <b className="ok"> fixed {u.fixed.length}</b> : null}{u.introduced?.length ? <b className="flag"> brought {u.introduced.length}</b> : null}</>} />
+        ))}</ul></>
+      )}
+      {c.newlyPublished.length > 0 && (
+        <><h2 className="h2">Newly published against what you have</h2><ul className="ch-list">{c.newlyPublished.map((u) => (
+          <Row key={u.id} i={u} hot note={<>{u.introduced!.length} new {u.introduced!.length === 1 ? "advisory" : "advisories"} for {u.version ?? "this version"}</>} />
+        ))}</ul></>
+      )}
+      {c.added.length > 0 && (
+        <><h2 className="h2">Arrived</h2><ul className="ch-list">{c.added.map((u) => (
+          <Row key={u.id} i={u} hot={u.runsCode || u.advisories > 0} note={u.runsCode ? "runs code when loaded" : u.advisories ? `${u.advisories} advisories` : u.version ?? "nothing known"} />
+        ))}</ul></>
+      )}
+      {c.removed.length > 0 && (
+        <><h2 className="h2">Gone</h2><ul className="ch-list">{c.removed.map((u) => (
+          <Row key={u.id} i={u} note={u.advisories ? `took ${u.advisories} advisories with it` : u.version ?? ""} />
+        ))}</ul></>
+      )}
+    </section>
   );
 }

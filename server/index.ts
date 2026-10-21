@@ -4,6 +4,8 @@ import path from "node:path";
 import { actionsFor, openApp, quarantine, quarantined, release, reveal, trash, update } from "./actions.js";
 import { getProgress, lastResult, startAssay } from "./assay.js";
 import { writeSpecimen } from "./models/specimen.js";
+import { noticesSince } from "./notices.js";
+import { startWatching } from "./watch.js";
 import { CACHE_DIR, DATA_DIR, DIST_DIR, PORT, VERSION } from "./paths.js";
 import { readPlist, run } from "./run.js";
 import { getSettings, hash, updateSettings } from "./store.js";
@@ -50,6 +52,8 @@ app.post("/api/assay/run", wrap(async (_req, res) => {
 app.get("/api/progress", wrap(async (req, res) => {
   res.json(getProgress(Math.max(0, Number(req.query.from) || 0)));
 }));
+
+app.get("/api/notifications", wrap(async (req, res) => res.json(await noticesSince(Number(req.query.since) || 0))));
 
 app.get("/api/settings", wrap(async (_req, res) => res.json(await getSettings())));
 app.put("/api/settings", wrap(async (req, res) => res.json(await updateSettings(req.body ?? {}))));
@@ -118,6 +122,8 @@ if (process.env.ASSAY_APP) {
     }
   }, 3_000).unref();
 }
+
+startWatching().catch(() => {});
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`Assay engine on http://127.0.0.1:${PORT} (data in ${DATA_DIR})`);

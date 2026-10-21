@@ -175,6 +175,17 @@ async function huggingface(onItem: (i: Item) => void, items: Item[]) {
   }
 }
 
+export const isWeightFile = (f: string) => WEIGHT_EXT.test(f);
+
+async function files(paths: string[], source: string, onItem: (i: Item) => void, items: Item[]) {
+  for (const p of paths) {
+    const item = await modelFile(p, source);
+    if (!item) continue;
+    items.push(item);
+    onItem(item);
+  }
+}
+
 // ---------- LM Studio and loose files ----------
 
 async function looseFiles(roots: string[], depth: number, skip: string[]): Promise<string[]> {
@@ -194,13 +205,13 @@ async function looseFiles(roots: string[], depth: number, skip: string[]): Promi
   return out;
 }
 
-async function files(paths: string[], source: string, onItem: (i: Item) => void, items: Item[]) {
-  for (const p of paths) {
+// One loose weight file as an item, or nothing if its bytes aren't a model.
+export async function modelFile(p: string, source: string): Promise<Item | undefined> {
     const r = await readWeights(p);
     // A .bin that is not a model (an installer, a firmware image) has no recognisable header.
-    if (r.file.format === "unknown" && !/\.(gguf|safetensors|ckpt|pt|pth)$/i.test(p)) continue;
+    if (r.file.format === "unknown" && !/\.(gguf|safetensors|ckpt|pt|pth)$/i.test(p)) return undefined;
     const report = merge([r]);
-    const item: Item = {
+    return {
       id: `file:${hash(p)}`,
       layer: "models",
       kind: "model-file",
@@ -212,9 +223,6 @@ async function files(paths: string[], source: string, onItem: (i: Item) => void,
       meta: { source: source === "Folder" ? path.dirname(p).replace(HOME, "~") : source, architecture: report.architecture, quantization: report.quantization },
       model: report,
     };
-    items.push(item);
-    onItem(item);
-  }
 }
 
 export async function collectModels(onItem: (i: Item) => void): Promise<Item[]> {

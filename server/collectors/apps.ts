@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { Item, Part } from "../../shared/types.js";
 import { HOME } from "../paths.js";
-import { readPlist } from "../run.js";
+import { readPlist, run } from "../run.js";
 import { cached, exists, hash, list, mtime } from "../store.js";
 
 const PLACES = ["/Applications", path.join(HOME, "Applications")];
@@ -96,7 +96,7 @@ async function frameworkParts(app: string): Promise<{ parts: Part[]; electron?: 
   return { parts, electron };
 }
 
-async function readApp(app: string): Promise<Item | undefined> {
+export async function readApp(app: string): Promise<Item | undefined> {
   const info = await readPlist(path.join(app, "Contents", "Info.plist"));
   if (!info) return undefined;
   const name = (info.CFBundleDisplayName as string | undefined) ?? (info.CFBundleName as string | undefined) ?? path.basename(app, ".app");
@@ -123,9 +123,26 @@ export async function collectApps(onItem: (i: Item) => void): Promise<Item[]> {
     const stamp = await mtime(path.join(app, "Contents", "Info.plist"));
     const item = await cached("apps", app, stamp, () => readApp(app)).catch(() => undefined);
     if (item) {
+      await markArrival(item);
       items.push(item);
       onItem(item);
     }
   }
   return items;
+}
+
+// macOS tags downloaded apps with com.apple.quarantine. Flag 0x40 is set the first time the app
+// is opened, so a tag without it means the app arrived but has never run.
+export async function markArrival(item: Item) {
+  if (!item.path) return;
+  const r = await run("xattr", ["-p", "com.apple.quarantine", item.path], 3_000);
+  delete item.meta.notOpened;
+  delete item.meta.arrivedAt;
+  if (!r.ok) return;
+  const [flags, stamp] = r.stdout.trim().split(";");
+  const f = parseInt(flags, 16);
+  if (!Number.isFinite(f) || f & 0x40) return;
+  item.meta.notOpened = true;
+  const at = parseInt(stamp, 16) * 1000;
+  if (at) item.meta.arrivedAt = at;
 }

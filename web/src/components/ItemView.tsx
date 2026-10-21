@@ -164,6 +164,12 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
               {att ? att.fix : item.model ? (item.model.safeToLoad ? "Safe to load. No file in it can run code when it’s opened." : "Don’t load it until you know where it came from.") : "Nothing known against it."}
             </p>
           </div>
+          {(item.meta.notOpened || item.meta.caughtNew) && (
+            <div className="cert-block arrival-note">
+              <h2 className="h3">Checked before first run</h2>
+              <p>{item.meta.notOpened ? `It arrived${item.meta.arrivedAt ? ` on ${new Date(Number(item.meta.arrivedAt)).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""} and has never been opened. Everything here was read without running it.` : "Assay read it the moment it arrived, before anything opened or loaded it."}</p>
+            </div>
+          )}
           {item.kind === "app" && (
             <div className="cert-block">
               <h2 className="h3">What it can reach</h2>

@@ -506,3 +506,8 @@ a.att-card:hover .att-title b { color: var(--hot); }
 .reach-list li.strong, .reach-chips span.strong { color: var(--hot); background: var(--hot-soft); }
 .reach-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .reach-note { margin-top: 10px; font-size: 12.5px; color: var(--ink-3) !important; }
+.arrivals { border-top: 1px solid var(--line); }
+.arrivals li { border-bottom: 1px solid var(--line); }
+.arrivals button { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: center; width: 100%; padding: 9px 0; text-align: left; background: none; border: 0; cursor: pointer; }
+.arrivals button:hover b { color: var(--hot); }
+.arrival-note p { color: var(--ink) !important; }

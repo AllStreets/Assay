@@ -51,6 +51,7 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
   const apps = items.filter((i) => i.layer === "apps").sort((a, b) => (view.adv.get(b.id) ?? 0) - (view.adv.get(a.id) ?? 0) || a.name.localeCompare(b.name));
   const models = items.filter((i) => i.layer === "models").sort((a, b) => Number(view.code.has(b.id)) - Number(view.code.has(a.id)) || (b.model?.parameters ?? 0) - (a.model?.parameters ?? 0));
   const maxP = Math.max(1, ...models.map((m) => m.model?.parameters ?? 0));
+  const arrivals = running ? [] : items.filter((i) => i.meta.notOpened || i.meta.caughtNew).sort((a, b) => Number(b.meta.caughtNew ?? b.meta.arrivedAt ?? 0) - Number(a.meta.caughtNew ?? a.meta.arrivedAt ?? 0));
   const flaggedApps = apps.filter((a) => view.adv.has(a.id) || view.code.has(a.id));
   const libs = libraryRows(items, findings);
   const envs = installRows(items, findings);
@@ -79,6 +80,21 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
         )}
         {!running && result && !result.vulnCheck.ran && (
           <p className="fine warn">{result.vulnCheck.error ? `OSV.dev couldn’t be reached: ${result.vulnCheck.error}.` : "The online check is off, so only models are judged."}</p>
+        )}
+        {arrivals.length > 0 && (
+          <>
+            <p className="lbl lbl-gap"><span>Checked before first run</span><span>{num(arrivals.length)}</span></p>
+            <ul className="arrivals">
+              {arrivals.slice(0, 5).map((i) => (
+                <li key={i.id}>
+                  <button onClick={() => open(`#/item/${encodeURIComponent(i.id)}`)}>
+                    <ItemLogo item={i} size={22} />
+                    <span className="todo-text"><b>{i.name}</b><span>{i.meta.notOpened ? "Arrived, never opened" : "Caught as it arrived"}{view.code.has(i.id) ? ", runs code when loaded" : view.adv.has(i.id) ? `, ${view.adv.get(i.id)} advisories` : ", nothing known"}</span></span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
         {todo.length > 0 && (
           <>

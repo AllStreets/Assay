@@ -226,8 +226,10 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
                       <summary>
                         <Sev s={g.worst} />
                         <span className="lib-name"><code>{g.part.name}</code><span className="muted">{g.part.version}</span></span>
-                        <span className="lib-n">{g.findings.length} {g.findings.length === 1 ? "advisory" : "advisories"}</span>
-                        <span className="lib-fix">{g.fixed ? `fixed in ${g.fixed}` : "no fix listed"}</span>
+                        <span className="lib-meta">
+                          <span className="lib-n">{g.findings.length} {g.findings.length === 1 ? "advisory" : "advisories"}</span>
+                          <span className="lib-fix">{g.fixed ? `fixed in ${g.fixed}` : "no fix listed"}</span>
+                        </span>
                       </summary>
                       <div className="lib-body">
                         {g.part.via && <p className="lib-via muted">Inside <code>{g.part.via.replace(/^\/Users\/[^/]+/, "~")}</code></p>}

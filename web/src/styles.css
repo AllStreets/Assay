@@ -377,7 +377,6 @@ a.att-card:hover { border-color: #4a443d; background: var(--basalt-3); }
 @media (max-width: 1080px) {
   .top-stamp { display: none; }
   .cert { grid-template-columns: minmax(0, 1fr); }
-  .cert-col.wide { order: -1; }
 }
 @media (max-width: 900px) {
   .home { grid-template-columns: minmax(0, 1fr); }
@@ -420,6 +419,7 @@ a.att-card:hover { border-color: #4a443d; background: var(--basalt-3); }
 .lib-name { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .lib-name code { color: var(--bone); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lib-name .muted { font: 400 12px var(--mono); white-space: nowrap; }
+.lib-meta { display: contents; }
 .lib-n { font-size: 13px; color: var(--bone-2); white-space: nowrap; }
 .lib-fix { font: 400 12px var(--mono); color: var(--verdigris); white-space: nowrap; min-width: 9em; text-align: right; }
 .lib[open] summary { border-bottom: 1px solid var(--rule-2); }
@@ -432,7 +432,8 @@ a.att-card:hover { border-color: #4a443d; background: var(--basalt-3); }
 .glyph svg { width: 52%; height: 52%; }
 @media (max-width: 640px) {
   .lib summary { grid-template-columns: auto minmax(0, 1fr); }
-  .lib-n, .lib-fix { grid-column: 2; text-align: left; min-width: 0; }
+  .lib-meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .lib-fix { text-align: left; min-width: 0; }
   .advs li { grid-template-columns: auto minmax(0, 1fr); }
   .advs li .adv { grid-column: 2; }
 }

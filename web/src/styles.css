@@ -528,3 +528,6 @@ a.att-card:hover { background: #ffffff05; }
 .mtable tr.bad .mt-status { color: #f08a6e; font-weight: 500; }
 .mtable tr.bad .mt-name::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; background: var(--oxide); transform: rotate(45deg) translateY(-2px); }
 @media (max-width: 900px) { .mtable th:nth-child(4), .mtable td:nth-child(4), .mtable th:nth-child(6), .mtable td:nth-child(6), .mtable th:nth-child(5), .mtable td:nth-child(5) { display: none; } }
+.sheet-blank { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 560px; text-align: center; }
+.blank-title { font: italic 400 26px var(--serif); color: var(--bone-2); }
+.blank-body { margin-top: 10px; max-width: 30em; color: var(--ash); font-size: 14.5px; }

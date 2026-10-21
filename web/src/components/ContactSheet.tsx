@@ -145,6 +145,15 @@ export function ContactSheet({ items, counts, marks, flagged, envMarks, reading,
   };
   const ghosts = (n: number, cls: string) => Array.from({ length: Math.min(n, 400) }, (_, k) => <span key={k} className={cls} />);
 
+  if (!items && !reading) {
+    return (
+      <div className="sheet sheet-blank">
+        <p className="blank-title">Nothing on the sheet yet.</p>
+        <p className="blank-body">Run the first assay and every app, model, extension and package on this Mac lands here, with anything that needs fixing marked in pencil.</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`sheet${items ? "" : " sheet-empty"}`} ref={ref}>
       <div className="sheet-caption" aria-live="polite">

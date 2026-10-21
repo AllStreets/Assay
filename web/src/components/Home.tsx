@@ -1,10 +1,10 @@
 import { ArrowRight, FlaskConical } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
-import type { Finding, Item, Layer, Progress } from "../../../shared/types";
+import type { Finding, Item, Layer, Progress, Severity } from "../../../shared/types";
 import type { Result } from "../api";
-import { LAYER_NAME, attention, entries, envFineness, fineness, macFineness, num, params } from "../format";
-import { Clean, ItemLogo, Ticks } from "./Metal";
-import { Button } from "./ui";
+import { LAYER_NAME, SEVERITY_RANK, attention, entries, envFineness, fineness, macFineness, num, params } from "../format";
+import { Clean, ItemLogo, LibStrip, Ticks } from "./Metal";
+import { Button, Sev } from "./ui";
 
 const ORDER: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
 const ZERO: Record<Layer, { items: number; parts: number }> = {
@@ -51,6 +51,9 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
   const apps = items.filter((i) => i.layer === "apps").sort((a, b) => (view.adv.get(b.id) ?? 0) - (view.adv.get(a.id) ?? 0) || a.name.localeCompare(b.name));
   const models = items.filter((i) => i.layer === "models").sort((a, b) => Number(view.code.has(b.id)) - Number(view.code.has(a.id)) || (b.model?.parameters ?? 0) - (a.model?.parameters ?? 0));
   const maxP = Math.max(1, ...models.map((m) => m.model?.parameters ?? 0));
+  const flaggedApps = apps.filter((a) => view.adv.has(a.id) || view.code.has(a.id));
+  const libs = libraryRows(items, findings);
+  const envs = installRows(items, findings);
   const flaggedIn = (l: Layer) => items.filter((i) => i.layer === l && view.flagged.has(i.id)).length;
 
   return (
@@ -97,20 +100,7 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
       </section>
 
       <section className="col col-mid">
-        <p className="lbl"><span>Apps <b>{num(counts.apps.items)}</b></span><span>{running ? "as read" : "most advisories first"}</span></p>
-        <div className="icon-grid">
-          {apps.map((a, k) => {
-            const n = view.adv.get(a.id);
-            return (
-              <button key={a.id} className={`icon-cell${n ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(a.id)}`)} title={`${a.name}${n ? `: ${n} advisories` : ""}`}>
-                <ItemLogo item={a} size={30} />
-                <span className="ix">{String(k + 1).padStart(2, "0")}</span>
-                {n ? <span className="cnt">{n}</span> : null}
-              </button>
-            );
-          })}
-        </div>
-        <p className="lbl lbl-gap"><span>AI models <b>{num(counts.models.items)}</b></span><span>parameters</span></p>
+        <p className="lbl"><span>AI models <b>{num(counts.models.items)}</b></span><span>{running ? "as read" : view.code.size ? `${view.code.size} runs code` : "all safe to load"}</span></p>
         <div className="model-rows">
           {models.map((m) => {
             const x = view.code.has(m.id);
@@ -118,11 +108,56 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
               <button key={m.id} className={`model-row${x ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(m.id)}`)}>
                 <ItemLogo item={m} size={22} />
                 <b>{m.name}</b>
-                <span className="mr-meta">{x ? "Runs code" : [params(m.model?.parameters), m.model?.quantization].filter(Boolean).join("  ")}</span>
+                <span className="mr-meta">{x ? "Runs code when loaded" : [params(m.model?.parameters), m.model?.quantization, m.model?.format].filter(Boolean).join("  ")}</span>
                 <span className="mr-bar"><i style={{ width: `${x ? 100 : Math.max(2, ((m.model?.parameters ?? 0) / maxP) * 100)}%` }} /></span>
               </button>
             );
           })}
+        </div>
+
+        <p className="lbl lbl-gap"><span>Flawed libraries <b>{running ? "" : num(libs.length)}</b></span><span>{running ? "checked when reading ends" : "inside your software"}</span></p>
+        {!running && (
+          <div className="lib-rows">
+            {libs.slice(0, 9).map((l) => (
+              <button key={l.key} className="lib-row" onClick={() => open(l.carriers.length === 1 ? `#/item/${encodeURIComponent(l.carriers[0].id)}` : "#/findings")}>
+                <Sev s={l.worst} />
+                <span className="lr-name"><code>{l.name}</code><span>{l.version}</span></span>
+                <span className="lr-carriers" title={l.carriers.map((c) => c.name).join(", ")}>
+                  {l.carriers.slice(0, 5).map((c) => <ItemLogo key={c.id} item={c} size={18} />)}
+                  <span>{l.carriers.length === 1 ? `in ${l.carriers[0].layer === "packages" ? String(l.carriers[0].meta.envLabel ?? "Homebrew") : l.carriers[0].name}` : `in ${l.carriers.length}`}</span>
+                </span>
+                <span className="lr-adv">{l.advisories} adv</span>
+                <span className="lr-fix">{l.fixed ? `fix ${l.fixed}` : "no fix"}</span>
+              </button>
+            ))}
+            {libs.length > 9 && <button className="link-more" onClick={() => open("#/findings")}>{num(libs.length - 9)} more <ArrowRight size={13} aria-hidden /></button>}
+          </div>
+        )}
+
+        <p className="lbl lbl-gap"><span>Installs <b>{num(envs.length)}</b></span><span>packages / flagged</span></p>
+        <div className="env-rows">
+          {envs.map((e) => (
+            <button key={e.label} className="env-row" onClick={() => !running && open("#/inventory")}>
+              <b>{e.label}</b>
+              <span className="er-n">{num(e.total)} / <em className={e.flagged ? "hot" : undefined}>{e.flagged}</em></span>
+              <LibStrip total={e.total} bad={e.flagged} max={140} />
+              {!running && <Clean f={e.fine} />}
+            </button>
+          ))}
+        </div>
+
+        <p className="lbl lbl-gap"><span>Apps <b>{num(counts.apps.items)}</b></span><span>{running ? "as read" : `${flaggedApps.length} carry advisories`}</span></p>
+        <div className="app-strip">
+          {(running ? apps : flaggedApps).slice(0, 40).map((a) => {
+            const n = view.adv.get(a.id);
+            return (
+              <button key={a.id} className={`icon-cell${n ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(a.id)}`)} title={`${a.name}${n ? `: ${n} advisories` : ""}`}>
+                <ItemLogo item={a} size={26} />
+                {n ? <span className="cnt">{n}</span> : null}
+              </button>
+            );
+          })}
+          {!running && apps.length > flaggedApps.length && <a className="app-more" href="#/inventory">+{num(apps.length - flaggedApps.length)} clean</a>}
         </div>
       </section>
 
@@ -159,4 +194,50 @@ function ReadLog({ items, adv, code, running, assay }: { items: Item[]; adv: Map
       </div>
     </>
   );
+}
+
+interface LibRow { key: string; name: string; version: string; carriers: Item[]; advisories: number; worst: Severity; fixed?: string }
+
+const cmpVer = (a: string, b: string) => {
+  const pa = a.split(/[.+-]/).map((x) => parseInt(x, 10) || 0), pb = b.split(/[.+-]/).map((x) => parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  return 0;
+};
+
+// The machine's flawed libraries, each once: which version, inside how many things.
+function libraryRows(items: Item[], findings: Finding[]): LibRow[] {
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const rows = new Map<string, LibRow & { adv: Set<string>; ids: Set<string> }>();
+  for (const f of findings) {
+    if (f.kind !== "vulnerability" || !f.part) continue;
+    const key = `${f.part.name}@${f.part.version}`;
+    const r = rows.get(key) ?? { key, name: f.part.name, version: f.part.version ?? "", carriers: [], advisories: 0, worst: "info" as Severity, adv: new Set<string>(), ids: new Set<string>() };
+    if (f.advisory) r.adv.add(f.advisory.id);
+    const item = byId.get(f.itemId);
+    if (item && !r.ids.has(item.id)) { r.ids.add(item.id); r.carriers.push(item); }
+    if (SEVERITY_RANK[f.severity] < SEVERITY_RANK[r.worst]) r.worst = f.severity;
+    const fx = f.advisory?.fixed;
+    if (fx && (!r.fixed || cmpVer(fx, r.fixed) > 0)) r.fixed = fx;
+    rows.set(key, r);
+  }
+  return [...rows.values()]
+    .map((r) => ({ ...r, advisories: r.adv.size }))
+    .sort((a, b) => SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst] || b.carriers.length * b.advisories - a.carriers.length * a.advisories);
+}
+
+interface EnvRow { label: string; total: number; flagged: number; fine: number }
+
+// Every place packages are installed: Homebrew, each Node, each Python.
+function installRows(items: Item[], findings: Finding[]): EnvRow[] {
+  const flagged = new Set(findings.filter((f) => f.kind === "vulnerability").map((f) => f.itemId));
+  const m = new Map<string, EnvRow>();
+  for (const i of items) {
+    if (i.layer !== "packages") continue;
+    const label = String(i.meta.envLabel ?? (i.kind === "brew" ? "Homebrew" : "Other"));
+    const r = m.get(label) ?? { label, total: 0, flagged: 0, fine: 999 };
+    r.total++;
+    if (flagged.has(i.id)) r.flagged++;
+    m.set(label, r);
+  }
+  return [...m.values()].map((r) => ({ ...r, fine: Math.min(999, Math.max(1, Math.floor(((r.total - r.flagged) / r.total) * 1000))) })).sort((a, b) => b.flagged - a.flagged || b.total - a.total);
 }

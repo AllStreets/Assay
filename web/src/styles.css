@@ -476,3 +476,28 @@ a.att-card:hover .att-title b { color: var(--hot); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+/* Home: the supply chain */
+.lib-rows, .env-rows { border-top: 1px solid var(--line); }
+.lib-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto 56px 92px; gap: 12px; align-items: center; width: 100%; padding: 8px 0; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.lib-row:hover .lr-name code { color: var(--hot); }
+.lr-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.lr-name code { color: var(--ink); font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr-name span { font: 400 11px var(--mono); color: var(--ink-3); white-space: nowrap; }
+.lr-carriers { display: flex; align-items: center; gap: 3px; font: 400 11px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.lr-carriers span { margin-left: 5px; max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+.lr-carriers img { border-radius: 4px; }
+.lr-adv { font: 400 11px var(--mono); color: var(--ink-2); text-align: right; }
+.lr-fix { font: 400 11px var(--mono); color: var(--ok); text-align: right; white-space: nowrap; }
+.env-row { display: grid; grid-template-columns: minmax(150px, 210px) 80px minmax(0, 1fr) auto; gap: 14px; align-items: center; width: 100%; padding: 9px 0; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.env-row b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.env-row:hover b { color: var(--hot); }
+.er-n { font: 400 11px var(--mono); color: var(--ink-2); }
+.er-n em { font-style: normal; }
+.er-n em.hot { color: var(--hot); }
+.env-row .libstrip i { width: 4px; height: 10px; }
+.app-strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.app-strip .icon-cell { width: 46px; }
+.app-more { font: 500 11.5px var(--mono); color: var(--ink-2); padding: 0 8px; }
+.app-more:hover { color: var(--hot); }
+@media (max-width: 900px) { .lib-row { grid-template-columns: 80px minmax(0, 1fr) auto; } .lr-adv, .lr-fix { display: none; } .env-row { grid-template-columns: 1fr auto; } .env-row .libstrip, .er-n { display: none; } }

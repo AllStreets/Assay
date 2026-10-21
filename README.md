@@ -29,7 +29,7 @@ On the Mac in these screenshots, Assay read **800 pieces of software built from 
 
 ## The first ten seconds
 
-<img src="docs/screens/home.png" alt="The home screen: every app icon, model and package name on one contact sheet, with the first five things to fix circled and numbered in red pencil, beside a one-sentence verdict" />
+<img src="docs/screens/sheet-detail.png" alt="A close crop of the contact sheet: package names typeset by install, with every flagged package in the Anaconda environment underlined in red pencil under the number 4" />
 
 The home screen is a contact sheet of your whole Mac: every app by its icon, every model by name and size, and every extension, package and container image typeset in one block, grouped by the install it belongs to. It fills in while Assay reads, item by item.
 

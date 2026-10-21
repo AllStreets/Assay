@@ -1,7 +1,7 @@
 import type { Ecosystem, Severity } from "../../shared/types.js";
 import { cached, hash } from "../store.js";
 
-// OSV.dev is the open vulnerability database behind GitHub's advisories, PyPA and others.
+// OSV.dev is the open vulnerability database that aggregates GitHub's advisories, PyPA and others.
 // Assay sends only (ecosystem, package name, version) and keeps every answer on disk.
 
 const API = "https://api.osv.dev/v1";

@@ -220,7 +220,7 @@ export function SettingsPage({ result }: { result: Result | null }) {
       <section className="panel">
         <h2>Vulnerability check</h2>
         <div className="row">
-          <div><p className="row-title">Check libraries against OSV.dev</p><p className="row-desc">Sends only package names and versions to OSV.dev, the open database behind GitHub’s advisories, and caches every answer. Turn it off and Assay still reads everything and checks models, offline.{result?.vulnCheck.ran ? ` Last check: ${num(result.vulnCheck.queried)} versions, ${when(result.vulnCheck.at)}.` : ""}</p></div>
+          <div><p className="row-title">Check libraries against OSV.dev</p><p className="row-desc">Sends only package names and versions to OSV.dev, the open vulnerability database that gathers GitHub’s advisories and many others, and caches every answer. Turn it off and Assay still reads everything and checks models, offline.{result?.vulnCheck.ran ? ` Last check: ${num(result.vulnCheck.queried)} versions, ${when(result.vulnCheck.at)}.` : ""}</p></div>
           <Toggle label="Check online" checked={s.checkOnline} onChange={(v) => save({ checkOnline: v })} />
         </div>
       </section>

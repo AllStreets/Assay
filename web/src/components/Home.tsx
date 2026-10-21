@@ -22,7 +22,7 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
           <h1 className="verdict">Assay reads every piece of software on this Mac, down to the libraries inside it, and checks each one against what’s known to be broken.</h1>
           <p className="lede">Apps, AI models, extensions, packages and containers. Models are read from their bytes and never loaded. Nothing is changed until you press a button.</p>
           <Button variant="gold" icon={FlaskConical} onClick={onRun}>Run the first assay</Button>
-          <p className="fine">The vulnerability check sends package names and versions to OSV.dev, the open database behind GitHub’s advisories. Nothing else leaves this Mac. You can turn it off in Settings.</p>
+          <p className="fine">The vulnerability check sends package names and versions to OSV.dev, the open vulnerability database that gathers GitHub’s advisories and many others. Nothing else leaves this Mac. You can turn it off in Settings.</p>
         </section>
       </article>
     );

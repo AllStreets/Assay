@@ -91,7 +91,10 @@ export function App() {
   else if (route === "#/settings") page = <SettingsPage result={result} />;
   else page = <Home result={result} progress={progress} onRun={run} open={go} />;
 
-  const tabOn = (href: string) => (href === "#/" ? route === "#/" : route.startsWith(href) || (href === "#/inventory" && route.startsWith("#/item/")));
+  // A certificate belongs to the page it was reached from: models to Models, the rest to Inventory.
+  const itemLayer = route.startsWith("#/item/") ? result?.items.find((i) => i.id === decodeURIComponent(route.slice(7)))?.layer : undefined;
+  const tabOn = (href: string) =>
+    href === "#/" ? route === "#/" : route.startsWith(href) || (itemLayer !== undefined && href === (itemLayer === "models" ? "#/models" : "#/inventory"));
 
   return (
     <div className="shell">

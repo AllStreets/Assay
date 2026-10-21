@@ -133,7 +133,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
 
   return (
     <article className="page item">
-      <a className="back" href="#/inventory"><ArrowLeft size={15} aria-hidden /> Inventory</a>
+      <a className="back" href={item.layer === "models" ? "#/models" : "#/inventory"}><ArrowLeft size={15} aria-hidden /> {item.layer === "models" ? "AI models" : "Inventory"}</a>
       <Stamp items={["ASSAY CERTIFICATE", KIND_NAME[item.kind].toUpperCase(), item.version && `VERSION ${item.version}`, LAYER_NAME[item.layer].toUpperCase(), item.sizeBytes && bytes(item.sizeBytes)]} />
       <header className="item-head">
         {item.kind === "app" && item.path ? <img src={api.icon(item.path)} width={64} height={64} alt="" /> : <KindGlyph kind={item.kind} size={64} />}

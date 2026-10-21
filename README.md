@@ -23,7 +23,7 @@ Assay reads all of it: every app, AI model, browser and editor extension, Homebr
   <img src="docs/demo.gif" alt="Assay running an assay: the core sample fills layer by layer, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
 </p>
 
-On the Mac in these screenshots, Assay read **372 pieces of software built from 3,638 libraries** in under half a minute. **33 of them carry a known vulnerability**, 11 of those because they ship an old copy of Electron, and of the 12 AI models on disk (52 GB of them), one would run code when loaded. That one is Assay's own harmless test specimen, which you can write yourself from Settings.
+On the Mac in these screenshots, Assay read **800 pieces of software built from 7,545 libraries** in about fifteen seconds, across four Node installs and four Pythons. **114 of them carry a known vulnerability**: 11 apps because they ship an old copy of Electron, and 63 packages in one forgotten Anaconda environment. Of the 12 AI models on disk (52 GB of them), one would run code when loaded. That one is Assay's own harmless test specimen, which you can write yourself from Settings.
 
 <br />
 
@@ -61,7 +61,11 @@ Then one row per affected library, worst first, with the number of advisories an
 
 <img src="docs/screens/findings.png" alt="Findings grouped by item, worst first, each with the one thing to do about it" />
 
-Findings are grouped by what you'd act on, not by advisory. Models that run code come first, then everything else by severity and by how much is known against it. Each one says what to do: update the app, update it with pip to a named version, or quarantine the file.
+Findings are grouped by what you'd act on, not by advisory. Models that run code come first, then everything else by severity and by how much is known against it. Each one says what to do: update the app, update a package to a named version, or quarantine the file. Sixty outdated packages in one old Python install are one decision, so they're one card, with every package a link to its own certificate.
+
+## Every install, not just the first on your PATH
+
+Macs collect installs: Node from Homebrew and three versions from nvm, Python from Homebrew, python.org, Anaconda and Apple's developer tools. A terminal only sees the first one on its PATH, and a Mac app sees a different PATH again. Assay finds each one, runs its own `npm` or `pip` in a clean environment so one install's settings can't leak into another's, and labels every package with the install it lives in. When pip itself crashes on a malformed package, as Anaconda's does here, Assay reads Python's own package metadata instead.
 
 A library being present means the app ships it, not that the app uses the affected feature, and Assay says so on every page where it matters.
 
@@ -91,7 +95,7 @@ There is no AI inside Assay. No model runs, and none is ever loaded. Every fact 
 | 43 published advisories | [OSV.dev](https://osv.dev), queried by package name and version | `curl -d '{"package":{"ecosystem":"npm","name":"electron"},"version":"19.1.1"}' https://api.osv.dev/v1/query` |
 | 31B parameters, Q4_K_M, 262,144 context | the GGUF header and tensor table | `pip install gguf`, then `gguf-dump ~/.ollama/models/blobs/sha256-...` |
 | Would import `posix.system` when loaded | the pickle's opcodes, walked without running them | `python3 -m pickletools data.pkl` |
-| Installed with Homebrew, npm, pip | the tools themselves | `brew info --json=v2 --installed`, `npm ls -g --json`, `pip list --format=json` |
+| Installed with Homebrew, npm, pip | the tools themselves, once per install | `brew info --json=v2 --installed`, `npm ls -g --json`, `python3 -m pip list --format=json` |
 
 ## Privacy
 
@@ -140,7 +144,7 @@ Then open http://localhost:4721. The first assay takes about half a minute. Afte
 | `server/collectors/apps.ts` | Reads each app's `Info.plist`, its frameworks, and every npm package in `app.asar` |
 | `server/collectors/models.ts` | Finds models in Ollama, the Hugging Face cache, LM Studio and your folders |
 | `server/collectors/extensions.ts` | Chrome, Brave, Edge, Arc and other Chromium browsers; VS Code, Cursor and Windsurf |
-| `server/collectors/packages.ts` | Homebrew, global npm, every Python environment's pip, and Docker images |
+| `server/collectors/packages.ts` | Homebrew, every Node install's global npm, every Python's pip, and Docker images |
 | `server/models/gguf.ts` | A GGUF reader: header, metadata and tensor table |
 | `server/models/pickle.ts` | A static pickle walker for protocols 0 to 5, PyTorch zip archives and safetensors headers |
 | `server/vuln/osv.ts` | Batched OSV.dev lookups with an on-disk cache |

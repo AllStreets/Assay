@@ -70,12 +70,16 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
   const codeModels = list.filter((a) => a.codeOnLoad);
   const totalParts = result.layers.reduce((a, l) => a + l.parts, 0);
   const counts = Object.fromEntries(result.layers.map((l) => [l.layer, { items: l.items, parts: l.parts }])) as Record<Layer, { items: number; parts: number }>;
-  const marks: Mark[] = list.map((a) => ({ id: a.item.id, layer: a.item.layer, severity: a.worst, label: `${a.item.name}: ${a.fix}` }));
+  // One mark per decision: a whole package environment is one mark, not fifty.
+  const marks: Mark[] = entries(list).map((e) =>
+    e.type === "env"
+      ? { id: `env:${e.key}`, layer: "packages", severity: e.worst, label: `${e.label}: ${e.fix}` }
+      : { id: e.a.item.id, layer: e.a.item.layer, severity: e.a.worst, label: `${e.a.item.name}: ${e.a.fix}` });
   const models = result.items.filter((i) => i.layer === "models");
 
   return (
     <article className="home">
-      <CoreSample counts={counts} marks={marks} onMark={(id) => open(`#/item/${encodeURIComponent(id)}`)} />
+      <CoreSample counts={counts} marks={marks} onMark={(id) => open(id.startsWith("env:") ? "#/findings" : `#/item/${encodeURIComponent(id)}`)} />
       <section className="home-right">
         <p className="phase"><span>ASSAYED</span><b>{num(result.items.length)} PIECES</b><b>{num(totalParts)} LIBRARIES</b><b>{num(models.length)} MODELS</b></p>
         <h1 className="verdict">

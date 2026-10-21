@@ -99,16 +99,31 @@ export function CoreSample({ counts, marks, drilling, onMark, selected, idle }: 
       return [pt.x, pt.y];
     }));
   }, [vein]);
-  const placed = useMemo(() => marks.map((m) => {
-    const rand = seeded(m.id);
-    if (m.layer === "models") {
-      const t = Math.round((0.2 + rand() * 0.6) * 100);
-      const [x, y] = veinPts[t] ?? [X + W / 2, TOP + (bottom - TOP) / 2];
-      return { ...m, x, y };
+  const placed = useMemo(() => {
+    // Each mark takes the best of a few seeded spots, the one farthest from marks already
+    // placed, so a crowded layer spreads out instead of stacking. Models go last, on top.
+    const out: (Mark & { x: number; y: number })[] = [];
+    const ordered = [...marks.filter((m) => m.layer !== "models"), ...marks.filter((m) => m.layer === "models")];
+    for (const m of ordered) {
+      const rand = seeded(m.id);
+      let best: [number, number] = [0, 0];
+      let bestD = -1;
+      for (let k = 0; k < 12; k++) {
+        let c: [number, number];
+        if (m.layer === "models") {
+          c = veinPts[Math.round((0.2 + rand() * 0.6) * 100)] ?? [X + W / 2, TOP + (bottom - TOP) / 2];
+        } else {
+          const b = bands.find((x) => x.layer === m.layer) ?? bands[0];
+          c = [X + 18 + rand() * (W - 36), b.y + 16 + rand() * Math.max(10, b.h - 32)];
+        }
+        const d = out.reduce((min, o) => Math.min(min, Math.hypot(o.x - c[0], o.y - c[1])), Infinity);
+        if (d > bestD) { bestD = d; best = c; }
+        if (d > 26) break;
+      }
+      out.push({ ...m, x: best[0], y: best[1] });
     }
-    const b = bands.find((x) => x.layer === m.layer) ?? bands[0];
-    return { ...m, x: X + 18 + rand() * (W - 36), y: b.y + 16 + rand() * Math.max(10, b.h - 32) };
-  }), [marks, bands, bottom, veinPts]);
+    return out;
+  }, [marks, bands, bottom, veinPts]);
 
   const colorFor = (s: Severity) => (s === "critical" || s === "high" ? "#E0603F" : s === "medium" ? "#E89A4B" : "#B8AE9E");
 

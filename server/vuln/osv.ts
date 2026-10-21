@@ -103,7 +103,8 @@ function advisory(v: OsvVuln, q: Query): Advisory {
   const fixes: string[] = [];
   for (const a of v.affected ?? []) {
     if (a.package && a.package.name.toLowerCase() !== q.name.toLowerCase()) continue;
-    for (const r of a.ranges ?? []) for (const e of r.events) if (e.fixed) fixes.push(e.fixed);
+    // GIT ranges name commits, not releases; only version ranges say what to install.
+    for (const r of a.ranges ?? []) if (r.type !== "GIT") for (const e of r.events) if (e.fixed) fixes.push(e.fixed);
   }
   const fixed = fixes.filter((f) => cmp(f, q.version) > 0).sort(cmp)[0] ?? fixes.sort(cmp).at(-1);
   const ghsa = [v.id, ...(v.aliases ?? [])].find((a) => a.startsWith("GHSA-"));

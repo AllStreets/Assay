@@ -1,6 +1,6 @@
 import { FlaskConical, Settings as Cog } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Progress } from "../../shared/types";
+import type { Item, Progress } from "../../shared/types";
 import { api, type Result } from "./api";
 import { Home } from "./components/Home";
 import { ItemView } from "./components/ItemView";
@@ -33,6 +33,9 @@ export function App() {
   const route = useRoute();
   const [result, setResult] = useState<Result | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
+  // The running assay's items as they arrive.
+  const live = useRef<Item[]>([]);
+  const [liveItems, setLiveItems] = useState<Item[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<number>(0);
@@ -50,7 +53,11 @@ export function App() {
 
   const poll = useCallback(async () => {
     try {
-      const p = await api.progress();
+      const p = await api.progress(live.current.length);
+      if (p.fresh?.length && p.running) {
+        live.current = [...live.current, ...p.fresh];
+        setLiveItems(live.current);
+      }
       setProgress(p);
       if (p.running) timer.current = window.setTimeout(poll, 500);
       else refresh();
@@ -67,6 +74,8 @@ export function App() {
 
   const run = async () => {
     try {
+      live.current = [];
+      setLiveItems([]);
       setProgress(await api.run());
       if (location.hash && location.hash !== "#/") location.hash = "#/";
       clearTimeout(timer.current);
@@ -82,14 +91,14 @@ export function App() {
 
   let page: React.ReactNode;
   if (!loaded) page = null;
-  else if (route === "#/" || running || (!result && !route.startsWith("#/settings"))) page = <Home result={result} progress={progress} onRun={run} open={go} />;
+  else if (route === "#/" || running || (!result && !route.startsWith("#/settings"))) page = <Home result={result} progress={progress} live={liveItems} onRun={run} open={go} />;
   else if (route.startsWith("#/item/") && result) page = <ItemView key={route} result={result} id={decodeURIComponent(route.slice(7))} onChanged={refresh} />;
   else if (route === "#/findings" && result) page = <Findings result={result} />;
   else if (route === "#/models" && result) page = <Models result={result} />;
   else if (route === "#/inventory" && result) page = <Inventory result={result} />;
   else if (route === "#/quarantine") page = <Quarantine onChanged={refresh} />;
   else if (route === "#/settings") page = <SettingsPage result={result} />;
-  else page = <Home result={result} progress={progress} onRun={run} open={go} />;
+  else page = <Home result={result} progress={progress} live={liveItems} onRun={run} open={go} />;
 
   // A certificate belongs to the page it was reached from: models to Models, the rest to Inventory.
   const itemLayer = route.startsWith("#/item/") ? result?.items.find((i) => i.id === decodeURIComponent(route.slice(7)))?.layer : undefined;

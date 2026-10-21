@@ -47,8 +47,8 @@ app.post("/api/assay/run", wrap(async (_req, res) => {
   res.json(getProgress());
 }));
 
-app.get("/api/progress", wrap(async (_req, res) => {
-  res.json(getProgress());
+app.get("/api/progress", wrap(async (req, res) => {
+  res.json(getProgress(Math.max(0, Number(req.query.from) || 0)));
 }));
 
 app.get("/api/settings", wrap(async (_req, res) => res.json(await getSettings())));

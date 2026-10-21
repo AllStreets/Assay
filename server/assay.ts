@@ -16,7 +16,10 @@ let progress: Progress = { running: false, found: empty() };
 let running: Promise<AssayResult> | undefined;
 let last: AssayResult | null | undefined;
 
-export const getProgress = () => progress;
+// Everything read so far in the running assay, lightened, so the page can show the sheet
+// developing item by item.
+let seen: Item[] = [];
+export const getProgress = (from = 0) => ({ ...progress, fresh: seen.slice(from), seen: seen.length });
 
 const layersOf = (items: Item[]) =>
   LAYERS.map((l) => ({ layer: l, items: items.filter((i) => i.layer === l).length, parts: items.filter((i) => i.layer === l).reduce((a, i) => a + i.parts.length, 0) }));
@@ -59,6 +62,7 @@ export function startAssay(): Promise<AssayResult> {
 async function runAssay(): Promise<AssayResult> {
   const startedAt = Date.now();
   progress = { running: true, stage: "Starting", found: empty(), startedAt };
+  seen = [];
   const items: Item[] = [];
   const settings = await getSettings();
   const hidden = new Set(settings.hiddenItems);
@@ -67,6 +71,7 @@ async function runAssay(): Promise<AssayResult> {
   const onItem = (i: Item) => {
     items.push(i);
     if (isHidden(i)) return;
+    seen.push({ ...i, parts: [], meta: { ...i.meta, partCount: i.parts.length } });
     progress.found[i.layer].items++;
     progress.found[i.layer].parts += i.parts.length;
   };

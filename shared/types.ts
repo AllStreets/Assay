@@ -130,6 +130,10 @@ export interface Progress {
   layer?: Layer;
   found: Record<Layer, { items: number; parts: number }>;
   startedAt?: number;
+  // Items read so far in this assay, after the first `from` the page already has; parts are
+  // left out to keep each poll small.
+  fresh?: Item[];
+  seen?: number;
 }
 
 export interface Settings {

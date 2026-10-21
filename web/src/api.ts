@@ -17,7 +17,7 @@ const post = <T,>(url: string, body?: unknown) =>
 export const api = {
   result: () => call<Result | null>("/api/assay"),
   run: () => post<Progress>("/api/assay/run"),
-  progress: () => call<Progress>("/api/progress"),
+  progress: (from = 0) => call<Progress>(`/api/progress?from=${from}`),
   settings: () => call<Settings>("/api/settings"),
   saveSettings: (s: Partial<Settings>) => call<Settings>("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) }),
   quarantined: () => call<QuarantineRecord[]>("/api/quarantine"),

@@ -148,7 +148,7 @@ export function ContactSheet({ items, counts, marks, flagged, envMarks, reading,
   return (
     <div className={`sheet${items ? "" : " sheet-empty"}`} ref={ref}>
       <div className="sheet-caption" aria-live="polite">
-        {hover ? <><b>{hover.name}</b> {KIND_NAME[hover.kind]}{hover.version ? ` ${hover.version}` : ""}{hover.parts.length > 1 ? `, ${num(hover.parts.length)} parts` : hover.model?.parameters ? `, ${params(hover.model.parameters)} parameters` : ""}</> : items ? "Point at anything to read it. Click to open it." : reading ? "Reading…" : "Nothing read yet."}
+        {hover ? <><b>{hover.name}</b> {KIND_NAME[hover.kind]}{hover.version ? ` ${hover.version}` : ""}{(hover.parts.length || Number(hover.meta.partCount ?? 0)) > 1 ? `, ${num(hover.parts.length || Number(hover.meta.partCount))} parts` : hover.model?.parameters ? `, ${params(hover.model.parameters)} parameters` : ""}</> : reading ? `Reading ${num((items ?? []).length)} so far` : items ? "Point at anything to read it. Click to open it." : "Nothing read yet."}
       </div>
 
       <section className="sheet-sec">

@@ -1,5 +1,5 @@
 import { ArrowRight, FlaskConical, ShieldCheck } from "lucide-react";
-import type { Layer, Progress } from "../../../shared/types";
+import type { Item, Layer, Progress } from "../../../shared/types";
 import type { Result } from "../api";
 import { LAYER_NAME, attention, entries, num } from "../format";
 
@@ -16,7 +16,7 @@ const ZERO: Record<Layer, { items: number; parts: number }> = {
   apps: { items: 0, parts: 0 }, models: { items: 0, parts: 0 }, extensions: { items: 0, parts: 0 }, packages: { items: 0, parts: 0 }, containers: { items: 0, parts: 0 },
 };
 
-export function Home({ result, progress, onRun, open }: { result: Result | null; progress: Progress | null; onRun: () => void; open: (to: string) => void }) {
+export function Home({ result, progress, live, onRun, open }: { result: Result | null; progress: Progress | null; live: Item[]; onRun: () => void; open: (to: string) => void }) {
   const running = !!progress?.running;
 
   if (!result && !running) {
@@ -39,7 +39,7 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
     const now = checking ? ORDER.length : ORDER.indexOf(progress?.layer ?? "apps");
     return (
       <article className="home">
-        <ContactSheet items={null} counts={counts} marks={NONE} flagged={NO_IDS} envMarks={NO_ENV} reading={progress?.layer ?? "apps"} />
+        <ContactSheet items={live} counts={counts} marks={NONE} flagged={NO_IDS} envMarks={NO_ENV} reading={progress?.layer ?? "apps"} onOpen={() => {}} />
         <section className="home-right">
           <h1 className="verdict running">{progress?.stage ?? "Starting"}<span className="cursor" /></h1>
           <ol className="steps">

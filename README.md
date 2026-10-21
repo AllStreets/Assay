@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#the-touchstone">The touchstone</a>&nbsp;&nbsp;&nbsp;
+  <a href="#the-bench">The bench</a>&nbsp;&nbsp;&nbsp;
   <a href="#ai-models">AI models</a>&nbsp;&nbsp;&nbsp;
   <a href="#the-certificate">Certificates</a>&nbsp;&nbsp;&nbsp;
   <a href="#findings">Findings</a>&nbsp;&nbsp;&nbsp;
@@ -20,22 +20,24 @@ Your Mac runs hundreds of pieces of software, and each one is built from dozens 
 Assay reads all of it: every app, AI model, browser and editor extension, Homebrew, npm and pip package, and Docker image, down to the exact version of every library inside. Then it checks each part against what's publicly known to be broken, and reads every model file byte by byte, without loading it, to see whether it would run code. When something needs doing, it tells you what, and every action it takes can be undone.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Assay running an assay: streaks go down on the touchstone and take their metal, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
+  <img src="docs/demo.gif" alt="Assay running an assay: the bench fills in live, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
 </p>
 
 On the Mac in these screenshots, Assay read **800 pieces of software built from 7,545 libraries** in about fifteen seconds, across four Node installs and four Pythons. **114 of them carry a known vulnerability**: 11 apps because they ship an old copy of Electron, and 63 packages in one forgotten Anaconda environment. Of the 12 AI models on disk (52 GB of them), one would run code when loaded. That one is Assay's own harmless test specimen, which you can write yourself from Settings.
 
 <br />
 
-## The touchstone
+## The bench
 
-<img src="docs/screens/stone-detail.png" alt="The touchstone: every app, model, extension and package as a streak of metal on a black stone, mostly gold, with copper streaks for software carrying known flaws, one red streak for the test specimen, and the first five things to fix scratched and numbered" />
+<img src="docs/screens/home-light.png" alt="Assay's overview: a clean-share readout of 947 per thousand, tick meters for each layer, every app icon in a numbered grid with advisory counts, AI models with their makers' logos and parameter bars, and a log of everything read" />
 
-For two thousand years gold has been tested by rubbing it on a black stone and reading the colour of the streak. Assay's home screen is that stone. Every piece of software on your Mac leaves one streak, as long as what it carries, in the colour of its fineness: gold where nothing is published against any of its libraries, rose and copper where something is, and red for base metal, a model that would run code the moment it's loaded.
+Assay looks and works like a bench instrument. The big readout is the Mac's clean share: of every 1,000 libraries inside its software, how many have nothing published against them. Here it's 947. Beside it, a meter for each layer shows how much of it is flagged, and a short list says what to fix first.
 
-Fineness is stated the way assay offices state it, in parts per thousand. An app is 915 fine when 915 of every 1,000 libraries inside it have nothing known against them. The Mac gets a fineness too, struck as a hallmark and read against the old hallmarking standards along the bottom of the stone: this one assays at 947, just above sterling.
+The middle of the bench is the Mac itself: every app by its own icon, numbered and ordered by how many advisories it carries, and every AI model with its maker's logo, its size and its precision. The read log on the right lists everything in the order Assay read it, with the real time it took to get there. While an assay runs, all three columns fill in live.
 
-While an assay runs the streaks go down raw, item by item, and take their metal once every library has been checked. The five things to fix first are scratched and numbered on the stone to match the list beside it. Point at any streak to read it; click it to open its certificate.
+<img src="docs/screens/home-dark.png" alt="The same overview in dark mode: blue-black glass, serif numerals, and the same instruments" />
+
+The moon key switches the bench to dark: the same instrument after hours, in blue-black glass with serif numerals. Assay remembers which you prefer.
 
 ## AI models
 
@@ -111,7 +113,7 @@ The first time the Mac app reads your Downloads, Documents or Desktop folder for
 
 ## Try it on something bad
 
-Settings can write `assay-test-specimen.pt` to your Downloads folder: a real PyTorch file whose pickle imports `os.system`, the same pattern real malicious models use. Its command only prints a line, so it's harmless even if something does load it, the way antivirus tools use the EICAR test file. Run the assay again and it shows up as the one red streak on the stone. Quarantine it, then release it, to see the undo work.
+Settings can write `assay-test-specimen.pt` to your Downloads folder: a real PyTorch file whose pickle imports `os.system`, the same pattern real malicious models use. Its command only prints a line, so it's harmless even if something does load it, the way antivirus tools use the EICAR test file. Run the assay again and it's the first thing on the list of what to fix. Quarantine it, then release it, to see the undo work.
 
 ## Build it yourself
 
@@ -152,7 +154,7 @@ Then open http://localhost:4721. The first assay takes about half a minute. Afte
 | `server/vuln/osv.ts` | Batched OSV.dev lookups with an on-disk cache |
 | `server/findings.ts` | Turns what was read into findings and severities |
 | `server/actions.ts` | Quarantine, release, update, trash, reveal |
-| `web/` | The React interface; the touchstone, hallmarks and model cross-sections are drawn in SVG |
+| `web/` | The React interface, in light and dark; the meters, library strips and model cross-sections are drawn by hand |
 | `src-tauri/` | The Mac app: a small Rust shell that runs the engine beside it and shows the interface in the system WebKit |
 
 ```sh

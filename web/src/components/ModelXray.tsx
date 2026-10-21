@@ -32,10 +32,9 @@ export function ModelXray({ item }: { item: Item }) {
     <div className="xray">
       {groups.length > 0 && (
         <div className="xray-plate">
-          <svg viewBox={`0 0 260 ${H}`} className="xray-svg" role="img" aria-label={`Cross-section of ${item.name}: ${layers.length} layers between the embeddings and the output`}>
+          <svg viewBox={`0 0 220 ${H}`} className="xray-svg" role="img" aria-label={`Cross-section of ${item.name}: ${layers.length} layers between the embeddings and the output`}>
             <defs>
-              <linearGradient id="slice" x1="0" x2="1"><stop offset="0" stopColor="#7A5A22" /><stop offset=".45" stopColor="#E8B04B" /><stop offset="1" stopColor="#8A6526" /></linearGradient>
-              <linearGradient id="slice-edge" x1="0" x2="1"><stop offset="0" stopColor="#5E5850" /><stop offset=".5" stopColor="#B89A72" /><stop offset="1" stopColor="#5E5850" /></linearGradient>
+              <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="#8C8376" strokeWidth="1" /></pattern>
             </defs>
             {groups.map((g) => {
               const h = Math.max(layers.length > 60 ? 1.5 : 2.5, (g.params / total) * H);
@@ -43,11 +42,12 @@ export function ModelXray({ item }: { item: Item }) {
               y += h;
               const isLayer = /^layer \d+$/.test(g.name);
               return (
-                <rect key={g.name} x={isLayer ? 40 : 20} width={isLayer ? 180 : 220} y={r.y} height={Math.max(1, r.h - (isLayer && r.h > 4 ? 1 : 0))}
-                  fill={isLayer ? "url(#slice)" : "url(#slice-edge)"} opacity={hover && hover !== g ? 0.35 : 1}
-                  onMouseEnter={() => setHover(g)} onMouseLeave={() => setHover(null)}>
+                <g key={g.name} opacity={hover && hover !== g ? 0.35 : 1} onMouseEnter={() => setHover(g)} onMouseLeave={() => setHover(null)}>
+                  {/* Layers are drawn as ruled slices; embeddings and the output head as hatched blocks, like a section drawing. */}
+                  <rect x={isLayer ? 30 : 14} width={isLayer ? 160 : 192} y={r.y} height={Math.max(1, r.h)} fill={isLayer ? "#1B1917" : "url(#hatch)"} stroke={isLayer ? "none" : "#8C8376"} strokeWidth={1} />
+                  {isLayer && <line x1={30} x2={190} y1={r.y + r.h} y2={r.y + r.h} stroke="#C9BFAF" strokeOpacity={0.7} strokeWidth={r.h > 3 ? 1 : 0.6} />}
                   <title>{`${g.name}: ${params(g.params)} parameters in ${g.count} tensors`}</title>
-                </rect>
+                </g>
               );
             })}
           </svg>
@@ -56,12 +56,12 @@ export function ModelXray({ item }: { item: Item }) {
             <p className="muted">parameters in {num(m.tensorCount ?? 0)} tensors</p>
             <p className="xray-row"><span className="sw edge" />Embeddings and output</p>
             <p className="xray-row"><span className="sw gold" />{layers.length} transformer layers</p>
-            <p className="xray-hover">{shown ? `${shown.name}: ${params(shown.params)} in ${shown.count} tensors` : "Hover a slice to read it"}</p>
+            {shown && <p className="xray-hover">{shown.name}: {params(shown.params)} in {shown.count} tensors</p>}
           </div>
         </div>
       )}
 
-      <p className="label">FILES</p>
+      <h2 className="h2">{m.files.length === 1 ? "The file" : `${m.files.length} files`}</h2>
       <ul className="mfiles">
         {m.files.map((f) => (
           <li key={f.path}>

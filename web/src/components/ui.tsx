@@ -23,28 +23,36 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
   );
 }
 
+// Severity as a small cut shape and a word: filled for the two that need action now.
 export function Sev({ s }: { s: Severity }) {
-  return <span className={`sev sev-${s}`}>{SEVERITY_NAME[s]}</span>;
+  return <span className={`sev sev-${s}`}><i aria-hidden />{SEVERITY_NAME[s]}</span>;
 }
 
-export function Stamp({ items }: { items: (string | number | false | null | undefined)[] }) {
-  return (
-    <p className="stamp" aria-hidden>
-      {items.filter((x) => x !== false && x !== null && x !== undefined && x !== "").map((x, i) => <span key={i}>{x}</span>)}
-    </p>
-  );
-}
-
-export function PageHead({ title, lede, stamp, actions }: { title: string; lede?: ReactNode; stamp?: (string | number | false | null | undefined)[]; actions?: ReactNode }) {
+export function PageHead({ title, lede, meta, actions }: { title: string; lede?: ReactNode; meta?: ReactNode; actions?: ReactNode }) {
   return (
     <header className="page-head">
       <div>
-        {stamp && <Stamp items={stamp} />}
         <h1 className="page-title">{title}</h1>
+        {meta && <p className="page-meta">{meta}</p>}
         {lede && <p className="page-lede">{lede}</p>}
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </header>
+  );
+}
+
+// The marks an assay office punches into metal it has tested: what it is, the verdict, and
+// which assay it was. Here they head every certificate.
+export function Hallmarks({ kind, clear, assay }: { kind: string; clear: boolean; assay: number }) {
+  return (
+    <div className="hallmarks" aria-hidden>
+      <span className="punch punch-shield"><KindGlyph kind={kind} size={18} bare /></span>
+      <span className="punch punch-oval">
+        {clear ? <svg viewBox="0 0 12 12" width="11" height="11"><circle cx="6" cy="6" r="4.2" fill="currentColor" /></svg>
+          : <svg viewBox="0 0 12 12" width="12" height="12"><path d="M6 .8 11.2 6 6 11.2.8 6Z" fill="currentColor" /></svg>}
+      </span>
+      <span className="punch punch-square">{assay}</span>
+    </div>
   );
 }
 
@@ -81,8 +89,9 @@ const GLYPH: Record<string, LucideIcon> = {
   brew: Beer, "npm-global": Package, pip: Package, "docker-image": Container, app: AppWindow,
 };
 
-export function KindGlyph({ kind, size = 36 }: { kind: string; size?: number }) {
+export function KindGlyph({ kind, size = 36, bare }: { kind: string; size?: number; bare?: boolean }) {
   const Icon = GLYPH[kind] ?? Package;
+  if (bare) return <Icon size={size} strokeWidth={1.7} aria-hidden />;
   return (
     <span className={`glyph${kind.includes("model") ? " glyph-model" : ""}`} style={{ width: size, height: size }} aria-hidden>
       <Icon strokeWidth={1.6} />

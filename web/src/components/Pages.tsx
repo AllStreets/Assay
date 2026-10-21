@@ -40,8 +40,7 @@ export function Inventory({ result }: { result: Result }) {
     <article className="page">
       <PageHead
         title="Inventory"
-        stamp={["ASSAY NO. " + String(result.id).padStart(4, "0"), `${num(result.items.length)} PIECES`, `${num(result.layers.reduce((a, l) => a + l.parts, 0))} LIBRARIES`]}
-        lede="Every piece of software Assay found, and what it was built from. Search a library name to see everything that carries it."
+        meta={`${num(result.items.length)} pieces of software, built from ${num(result.layers.reduce((a, l) => a + l.parts, 0))} libraries. Search a library to see everything that carries it.`}
       />
       <div className="filters">
         <div className="chips" role="tablist">
@@ -77,36 +76,38 @@ export function Models({ result }: { result: Result }) {
   const models = result.items.filter((i) => i.layer === "models").sort((a, b) => Number(a.model?.safeToLoad) - Number(b.model?.safeToLoad) || (b.sizeBytes ?? 0) - (a.sizeBytes ?? 0));
   const unsafe = models.filter((m) => !m.model?.safeToLoad);
   const total = models.reduce((a, m) => a + (m.sizeBytes ?? 0), 0);
+  const maxSize = Math.max(1, ...models.map((m) => m.sizeBytes ?? 0));
   return (
     <article className="page">
       <PageHead
         title="AI models"
-        stamp={[`${models.length} MODELS`, bytes(total), unsafe.length ? `${unsafe.length} UNSAFE TO LOAD` : "ALL SAFE TO LOAD"]}
-        lede="Every model on this Mac, read from its own bytes and never loaded. GGUF and safetensors files can’t carry code; pickle files can, so Assay lists every import a pickle would perform."
+        meta={`${models.length} models, ${bytes(total)} on disk. ${unsafe.length ? `${unsafe.length} ${unsafe.length === 1 ? "isn’t" : "aren’t"} safe to load.` : "All are safe to load."}`}
+        lede="Read from their own bytes, never loaded. GGUF and safetensors hold only numbers; a pickle can carry code, so every import it would perform is listed."
       />
       {!models.length && <Empty icon={PackageOpen} title="No models found">Assay looks in Ollama, the Hugging Face cache, LM Studio and the folders listed in Settings.</Empty>}
-      <ul className="model-grid">
-        {models.map((m) => (
-          <li key={m.id}>
-            <a className={`specimen${m.model?.safeToLoad ? "" : " danger"}`} href={`#/item/${encodeURIComponent(m.id)}`}>
-              <div className="sp-top">
-                <span className={`fmt fmt-${m.model?.format}`}>{m.model?.format}</span>
-                <span className={m.model?.safeToLoad ? "ok" : "flag"}>{m.model?.safeToLoad ? "Safe to load" : m.model?.files.some((f) => f.imports?.some((i) => i.verdict === "dangerous")) ? "Runs code on load" : "Couldn’t be checked"}</span>
-              </div>
-              <p className="sp-name">{m.name}</p>
-              <p className="sp-src muted">{String(m.meta.source ?? "")}</p>
-              {m.model?.parameters ? <div className="sp-big">{params(m.model.parameters)}<span>params</span></div> : <div className="sp-big">{bytes(m.sizeBytes)}<span>{m.model?.format === "pickle" || m.model?.format === "pytorch-zip" ? "pickled weights" : "on disk"}</span></div>}
-              <dl className="sp-facts">
-                <dt>Architecture</dt><dd>{m.model?.architecture ?? "unknown"}</dd>
-                <dt>Precision</dt><dd>{m.model?.quantization ?? "unknown"}</dd>
-                <dt>Context</dt><dd>{m.model?.contextLength ? `${num(m.model.contextLength)}` : "unknown"}</dd>
-                <dt>License</dt><dd>{m.model?.license?.split(/[\n.]/)[0].slice(0, 28) ?? "not stated"}</dd>
-                <dt>On disk</dt><dd>{bytes(m.sizeBytes)}</dd>
-              </dl>
-            </a>
-          </li>
-        ))}
-      </ul>
+      <table className="mtable">
+        <thead>
+          <tr><th>Model</th><th>Format</th><th className="r">Parameters</th><th>Precision</th><th className="r">Context</th><th>License</th><th className="r">On disk</th><th>Loading it</th></tr>
+        </thead>
+        <tbody>
+          {models.map((m) => {
+            const dangerous = m.model?.files.some((f) => f.imports?.some((i) => i.verdict === "dangerous"));
+            const status = m.model?.safeToLoad ? "Safe" : dangerous ? "Runs code" : "Couldn’t be checked";
+            return (
+              <tr key={m.id} className={m.model?.safeToLoad ? "" : "bad"} onClick={() => (location.hash = `#/item/${encodeURIComponent(m.id)}`)}>
+                <td><a href={`#/item/${encodeURIComponent(m.id)}`} className="mt-name">{m.name}</a><span className="mt-src">{String(m.meta.source ?? "")}</span></td>
+                <td className="mono">{m.model?.format}</td>
+                <td className="r num-serif">{m.model?.parameters ? params(m.model.parameters) : ""}</td>
+                <td className="mono">{m.model?.quantization ?? ""}</td>
+                <td className="r mono">{m.model?.contextLength ? num(m.model.contextLength) : ""}</td>
+                <td className="mt-lic">{m.model?.license?.split(/[\n.]/)[0].slice(0, 24) ?? ""}</td>
+                <td className="r"><span className="mt-size"><span className="mt-bar"><i style={{ width: `${Math.max(3, ((m.sizeBytes ?? 0) / maxSize) * 100)}%` }} /></span>{bytes(m.sizeBytes)}</span></td>
+                <td className="mt-status">{status}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </article>
   );
 }
@@ -121,8 +122,7 @@ export function Findings({ result }: { result: Result }) {
     <article className="page">
       <PageHead
         title="Findings"
-        stamp={[`${list.length} ITEMS NEED ATTENTION`, `${sev("critical")} CRITICAL`, `${sev("high")} HIGH`, result.vulnCheck.ran ? `CHECKED ${when(result.vulnCheck.at).toUpperCase()}` : "ONLINE CHECK OFF"]}
-        lede="Grouped by what you can do about them, worst first. Every vulnerability comes from a published advisory on OSV.dev; every model finding from the file’s own bytes."
+        meta={<>{num(list.length)} need attention: {sev("critical")} critical, {sev("high")} high. {result.vulnCheck.ran ? `Checked against OSV.dev ${when(result.vulnCheck.at)}.` : "The online check is off."}</>}
       />
       {!list.length && <Empty icon={ShieldCheck} title="Nothing needs attention">No piece of software matches a known vulnerability or an unsafe model.</Empty>}
       <ul className="att-list">
@@ -147,7 +147,7 @@ export function Findings({ result }: { result: Result }) {
       </ul>
       {notes.length > 0 && (
         <>
-          <p className="label section-label">NOTES</p>
+          <h2 className="h2 section-gap">Notes</h2>
           <ul className="att-list quiet">
             {notes.map((a) => (
               <li key={a.item.id}>
@@ -204,7 +204,7 @@ export function Quarantine({ onChanged }: { onChanged: () => void }) {
   }, []);
   return (
     <article className="page">
-      <PageHead title="Quarantine" stamp={[`${recs?.length ?? 0} HELD`]} lede="Items you quarantined are held here, where nothing can open or load them. Release puts each one back exactly where it was." />
+      <PageHead title="Quarantine" meta="Held where nothing can open or load them. Release puts each one back exactly where it was." />
       {msg && <p className="note-strip ok" role="status">{msg}</p>}
       {recs && !recs.length && <Empty icon={Lock} title="Nothing is quarantined">Quarantine an item from its certificate page.</Empty>}
       <ul className="att-list">
@@ -247,7 +247,7 @@ export function SettingsPage({ result }: { result: Result | null }) {
   if (!s) return null;
   return (
     <article className="page settings">
-      <PageHead title="Settings" stamp={[about && `VERSION ${about.version}`, "LOCAL ONLY"]} lede="What Assay checks, where it looks, and what leaves this Mac." />
+      <PageHead title="Settings" meta={about ? `Version ${about.version}. Everything stays on this Mac.` : undefined} />
 
       <section className="panel">
         <h2>Vulnerability check</h2>

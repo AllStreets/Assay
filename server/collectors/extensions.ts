@@ -30,8 +30,10 @@ async function resolveName(dir: string, manifest: Record<string, unknown>) {
   const raw = String(manifest.name ?? "");
   const m = raw.match(/^__MSG_(.+)__$/);
   if (!m) return raw;
+  // The Mac's own language first, then the extension's default, then English.
+  const sys = Intl.DateTimeFormat().resolvedOptions().locale.replace("-", "_");
   const locale = String(manifest.default_locale ?? "en");
-  for (const loc of [locale, "en", "en_US"]) {
+  for (const loc of [sys, sys.split("_")[0], locale, "en", "en_US"]) {
     try {
       const msgs = await readJson(path.join(dir, "_locales", loc, "messages.json"));
       const hit = Object.entries(msgs).find(([k]) => k.toLowerCase() === m[1].toLowerCase());

@@ -4,7 +4,7 @@ import type { Finding, Item, Part } from "../../../shared/types";
 import { api, type Result } from "../api";
 import { KIND_NAME, LAYER_NAME, SEVERITY_RANK, attention, bytes, num, params } from "../format";
 import { ModelXray } from "./ModelXray";
-import { Button, Dialog, KindGlyph, Sev, Stamp } from "./ui";
+import { Button, Dialog, Hallmarks, KindGlyph, Sev } from "./ui";
 
 type Act = "quarantine" | "trash" | "update";
 
@@ -23,19 +23,19 @@ function Trace({ finding, item }: { finding: Finding; item: Item }) {
     return (
       <ol className="trace">
         <li className="t-node bad">
-          <span className="t-k">CALLS</span>
+          <span className="t-k">Calls</span>
           <b>{bad.map((i) => `${i.module}.${i.name}`).join(", ") || finding.evidence}</b>
           <span>{bad.length === 1 ? "A function that can run any program on this Mac" : "Functions that can run programs on this Mac"}</span>
         </li>
         <li className="t-joint" aria-hidden><ArrowUp size={13} /></li>
         <li className="t-node">
-          <span className="t-k">INSIDE</span>
+          <span className="t-k">Inside</span>
           <b>The pickle instructions in {file?.path.split("/").pop() ?? item.name}</b>
           <span>Python carries them out as it rebuilds the weights</span>
         </li>
         <li className="t-joint" aria-hidden><ArrowUp size={13} /></li>
         <li className="t-node">
-          <span className="t-k">RUNS WHEN</span>
+          <span className="t-k">Runs when</span>
           <b>Anything loads it</b>
           <span>torch.load, a notebook, or a tool that opens the file for you</span>
         </li>
@@ -45,7 +45,7 @@ function Trace({ finding, item }: { finding: Finding; item: Item }) {
   return (
     <ol className="trace">
       <li className="t-node bad">
-        <span className="t-k">FLAW</span>
+        <span className="t-k">Flaw</span>
         <b>{p ? `${p.name} ${p.version ?? ""}` : finding.title}</b>
         <span>{finding.advisory ? `${finding.advisory.id}${finding.advisory.fixed ? `, fixed in ${finding.advisory.fixed}` : ""}` : finding.evidence}</span>
       </li>
@@ -53,7 +53,7 @@ function Trace({ finding, item }: { finding: Finding; item: Item }) {
         <>
           <li className="t-joint" aria-hidden><ArrowUp size={13} /></li>
           <li className="t-node">
-            <span className="t-k">INSIDE</span>
+            <span className="t-k">Inside</span>
             <b>{p.via.split("/").slice(-3).join("/")}</b>
             <span>{p.name === "electron" ? "The Electron runtime the app ships with" : "Where Assay found it in the app"}</span>
           </li>
@@ -61,7 +61,7 @@ function Trace({ finding, item }: { finding: Finding; item: Item }) {
       )}
       <li className="t-joint" aria-hidden><ArrowUp size={13} /></li>
       <li className="t-node">
-        <span className="t-k">USED BY</span>
+        <span className="t-k">Used by</span>
         <b>{item.name}{item.version ? ` ${item.version}` : ""}</b>
         <span>{KIND_NAME[item.kind]}</span>
       </li>
@@ -134,7 +134,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
   return (
     <article className="page item">
       <a className="back" href={item.layer === "models" ? "#/models" : "#/inventory"}><ArrowLeft size={15} aria-hidden /> {item.layer === "models" ? "AI models" : "Inventory"}</a>
-      <Stamp items={["ASSAY CERTIFICATE", KIND_NAME[item.kind].toUpperCase(), item.version && `VERSION ${item.version}`, LAYER_NAME[item.layer].toUpperCase(), item.sizeBytes && bytes(item.sizeBytes)]} />
+      <Hallmarks kind={item.kind} clear={!att || att.worst === "info"} assay={result.id} />
       <header className="item-head">
         {item.kind === "app" && item.path ? <img src={api.icon(item.path)} width={64} height={64} alt="" /> : <KindGlyph kind={item.kind} size={64} />}
         <div>
@@ -156,18 +156,17 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
       <div className="cert">
         <section className="cert-col">
           <div className="cert-block">
-            <p className="label">VERDICT</p>
             <p className="cert-verdict">
               {att ? att.fix : item.model ? (item.model.safeToLoad ? "Safe to load. No file in it can run code when it’s opened." : "Don’t load it until you know where it came from.") : "Nothing known against it."}
             </p>
           </div>
           <div className="cert-block">
-            <p className="label">IDENTIFIED BY</p>
+            <h2 className="h3">Identified by</h2>
             <p>{item.evidence}</p>
           </div>
           {item.model && (
             <div className="cert-block">
-              <p className="label">MODEL</p>
+              <h2 className="h3">The model</h2>
               <dl className="facts">
                 {item.model.architecture && <><dt>Architecture</dt><dd>{item.model.architecture}</dd></>}
                 {item.model.parameters ? <><dt>Parameters</dt><dd>{params(item.model.parameters)}</dd></> : null}
@@ -181,7 +180,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
           )}
           {item.parts.length > 0 && (
             <div className="cert-block">
-              <p className="label">CONTAINS {num(item.parts.length)} {item.parts.length === 1 ? "PART" : "PARTS"}</p>
+              <h2 className="h3">{num(item.parts.length)} {item.parts.length === 1 ? "part" : "parts"} inside</h2>
               {[...groups.entries()].map(([eco, ps]) => (
                 <details key={eco} className="parts" open={ps.length < 12}>
                   <summary>{eco === "framework" ? "Frameworks" : eco === "PyPI" ? "Python packages" : eco === "npm" ? "npm packages" : eco} <span className="muted">{num(ps.length)}</span></summary>
@@ -200,13 +199,13 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
           {item.model && <ModelXray item={item} />}
           {lead && lead.severity !== "info" && (
             <div className="reach">
-              <p className="label">HOW IT REACHES YOU</p>
+              <h2 className="h2">How it reaches you</h2>
               <Trace finding={lead} item={item} />
             </div>
           )}
           {others.length > 0 && (
             <>
-              <p className="label">{item.model ? "WHAT THE FILE DOES" : "NOTES"}</p>
+              <h2 className="h2">{item.model ? "What the file does" : "Notes"}</h2>
               <ul className="finds">
                 {others.map((f) => (
                   <li key={f.id} className={`find sev-row-${f.severity}`}>
@@ -219,7 +218,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
           )}
           {libs.length > 0 && (
             <>
-              <p className="label libs-label stamp"><span>AFFECTED LIBRARIES</span><span>{libs.length}</span><span>{advisories.length} ADVISORIES</span></p>
+              <h2 className="h2">{libs.length} affected {libs.length === 1 ? "library" : "libraries"}, {advisories.length} {advisories.length === 1 ? "advisory" : "advisories"}</h2>
               <ul className="libs">
                 {shownLibs.map((g) => (
                   <li key={g.key}>
@@ -229,7 +228,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
                         <span className="lib-name"><code>{g.part.name}</code><span className="muted">{g.part.version}</span></span>
                         <span className="lib-meta">
                           <span className="lib-n">{g.findings.length} {g.findings.length === 1 ? "advisory" : "advisories"}</span>
-                          <span className="lib-fix">{g.fixed ? `fixed in ${g.fixed}` : "no fix listed"}</span>
+                          <span className="lib-fix">{g.fixed ? `Fixed in ${g.fixed}` : "No fix listed"}</span>
                         </span>
                       </summary>
                       <div className="lib-body">
@@ -253,7 +252,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
           )}
           {!findings.length && (
             <>
-              <p className="label">FINDINGS</p>
+              <h2 className="h2">Findings</h2>
               <p className="muted">Nothing found.{item.parts.length ? " None of its parts matches a published advisory." : ""}</p>
             </>
           )}

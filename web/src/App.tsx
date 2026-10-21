@@ -113,7 +113,7 @@ export function App() {
           ))}
         </nav>
         <div className="top-right">
-          {result && !running && <span className="stamp top-stamp">ASSAYED {when(result.finishedAt).toUpperCase()}</span>}
+          {result && !running && <span className="top-stamp">Assayed {when(result.finishedAt)}</span>}
           <Button variant="ghost" icon={FlaskConical} busy={running} onClick={run}>{running ? "Assaying" : result ? "Run again" : "Run assay"}</Button>
           <a href="#/settings" className="icon-btn" aria-label="Settings" aria-current={route === "#/settings" ? "page" : undefined}><Cog size={17} /></a>
         </div>

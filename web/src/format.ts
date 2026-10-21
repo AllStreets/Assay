@@ -168,3 +168,58 @@ export function when(t?: number) {
   if (d < 86_400_000) return `${Math.round(d / 3_600_000)} h ago`;
   return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+// Fineness, the way an assay office states purity: parts per thousand. Here, the share of a
+// piece of software's libraries with nothing published against them. A model that runs code
+// when it's loaded is base metal; one Assay couldn't read has no fineness at all.
+// "raw" is a streak laid down while the assay is still reading, before its metal is known.
+export type Metal = "fine" | "gold" | "pale" | "rose" | "copper" | "base" | "unread" | "raw";
+
+export function fineness(item: Item, findings: Finding[]): number | null {
+  const mine = findings.filter((f) => f.itemId === item.id);
+  if (mine.some((f) => f.kind === "code-on-load")) return 0;
+  if (mine.some((f) => f.kind === "unreadable" && f.severity !== "info")) return null;
+  const n = item.parts.length || Number(item.meta.partCount ?? 0);
+  if (!n) return item.layer === "models" && item.model && !item.model.safeToLoad ? null : 999;
+  const bad = new Set(mine.filter((f) => f.kind === "vulnerability" && f.part).map((f) => `${f.part!.name}@${f.part!.version}@${f.part!.via ?? ""}`)).size;
+  // Known flaws lower fineness but never make it base: base is reserved for running code.
+  return Math.max(1, Math.min(999, Math.floor(((n - bad) / n) * 1000)));
+}
+
+// An install's fineness: the share of its packages with nothing published against them.
+export function envFineness(items: Item[], findings: Finding[], label: string) {
+  const pkgs = items.filter((i) => i.layer === "packages" && String(i.meta.envLabel ?? (i.kind === "brew" ? "Homebrew" : "")) === label);
+  if (!pkgs.length) return 999;
+  const flagged = new Set(findings.filter((f) => f.kind === "vulnerability").map((f) => f.itemId));
+  const bad = pkgs.filter((p) => flagged.has(p.id)).length;
+  return Math.max(1, Math.floor(((pkgs.length - bad) / pkgs.length) * 1000));
+}
+
+export function macFineness(items: Item[], findings: Finding[]) {
+  const total = items.reduce((a, i) => a + i.parts.length, 0);
+  const bad = new Set(findings.filter((f) => f.kind === "vulnerability" && f.part).map((f) => `${f.itemId}|${f.part!.name}@${f.part!.version}@${f.part!.via ?? ""}`)).size;
+  return { total, bad, fine: total ? Math.min(999, Math.floor(((total - bad) / total) * 1000)) : 999 };
+}
+
+export function metal(f: number | null): Metal {
+  if (f === null) return "unread";
+  if (f === 0) return "base";
+  if (f >= 990) return "fine";
+  if (f >= 950) return "gold";
+  if (f >= 900) return "pale";
+  if (f >= 750) return "rose";
+  return "copper";
+}
+
+// The hallmarking standards, finest first, as reference needles on the stone.
+export const STANDARDS: { fine: number; name: string; metal: Metal }[] = [
+  { fine: 999, name: "Fine", metal: "fine" },
+  { fine: 958, name: "Britannia", metal: "gold" },
+  { fine: 925, name: "Sterling", metal: "pale" },
+  { fine: 916, name: "22 carat", metal: "pale" },
+  { fine: 750, name: "18 carat", metal: "rose" },
+  { fine: 585, name: "14 carat", metal: "copper" },
+  { fine: 0, name: "Base", metal: "base" },
+];
+
+export const standardOf = (f: number) => STANDARDS.find((s) => f >= s.fine) ?? STANDARDS[STANDARDS.length - 1];

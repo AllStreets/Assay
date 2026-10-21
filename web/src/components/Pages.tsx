@@ -2,7 +2,8 @@ import { FlaskConical, FolderOpen, Lock, PackageOpen, Search, ShieldCheck, Unloc
 import { useEffect, useMemo, useState } from "react";
 import type { Layer, QuarantineRecord, Settings } from "../../../shared/types";
 import { api, type Result } from "../api";
-import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, num, params, when, type Entry } from "../format";
+import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, envFineness, fineness, num, params, when, type Entry } from "../format";
+import { Punch } from "./Metal";
 import { Button, Empty, KindGlyph, PageHead, Sev, Toggle } from "./ui";
 
 const LAYERS: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
@@ -60,7 +61,7 @@ export function Inventory({ result }: { result: Result }) {
               <Icon item={i} />
               <span className="inv-name"><b>{i.name}</b><span className="muted">{KIND_NAME[i.kind]}{i.version ? ` ${i.version}` : ""}{i.meta.envLabel ? `, ${i.meta.envLabel}` : ""}</span></span>
               <span className="inv-parts muted">{i.parts.length > 1 ? `${num(i.parts.length)} parts` : i.model ? params(i.model.parameters) : i.sizeBytes ? bytes(i.sizeBytes) : ""}</span>
-              <span className="inv-state">{(() => { const e = flagged.get(i.id); if (!e) return <span className="ok">Clear</span>; if (e.code) return <span className="flag">Runs code on load</span>; if (!e.adv.size && e.unread) return <span className="flag">Couldn’t be checked</span>; return <span className="flag">{e.adv.size} {e.adv.size === 1 ? "advisory" : "advisories"}</span>; })()}</span>
+              <span className="inv-state">{(() => { const e = flagged.get(i.id); const f = fineness(i, result.findings); return <><FinePunch f={f} /><span className={e ? "flag" : "ok"}>{!e ? "Clear" : e.code ? "Runs code on load" : !e.adv.size && e.unread ? "Couldn’t be checked" : `${e.adv.size} ${e.adv.size === 1 ? "advisory" : "advisories"}`}</span></>; })()}</span>
             </a>
           </li>
         ))}
@@ -68,6 +69,11 @@ export function Inventory({ result }: { result: Result }) {
       {!rows.length && <Empty icon={Search} title="Nothing matches">Try a different name or layer.</Empty>}
     </article>
   );
+}
+
+// A small punch with an item's fineness, "base" for a model that runs code.
+function FinePunch({ f }: { f: number | null }) {
+  return <Punch size="s" tone={f === 0 ? "base" : undefined}>{f === null ? "?" : f === 0 ? "base" : f}</Punch>;
 }
 
 // ---------- Models ----------
@@ -102,7 +108,7 @@ export function Models({ result }: { result: Result }) {
                 <td className="r mono">{m.model?.contextLength ? num(m.model.contextLength) : ""}</td>
                 <td className="mt-lic">{m.model?.license?.split(/[\n.]/)[0].slice(0, 24) ?? ""}</td>
                 <td className="r"><span className="mt-size"><span className="mt-bar"><i style={{ width: `${Math.max(3, ((m.sizeBytes ?? 0) / maxSize) * 100)}%` }} /></span>{bytes(m.sizeBytes)}</span></td>
-                <td className="mt-status">{status}</td>
+                <td className="mt-status"><FinePunch f={m.model?.safeToLoad ? 999 : dangerous ? 0 : null} />{status}</td>
               </tr>
             );
           })}
@@ -127,7 +133,7 @@ export function Findings({ result }: { result: Result }) {
       {!list.length && <Empty icon={ShieldCheck} title="Nothing needs attention">No piece of software matches a known vulnerability or an unsafe model.</Empty>}
       <ul className="att-list">
         {entries(list).map((e) => e.type === "env" ? (
-          <li key={e.key}><EnvCard e={e} /></li>
+          <li key={e.key}><EnvCard e={e} f={envFineness(result.items, result.findings, e.key)} /></li>
         ) : (() => { const a = e.a; return (
           <li key={a.item.id}>
             <a href={`#/item/${encodeURIComponent(a.item.id)}`} className="att-card">
@@ -138,7 +144,7 @@ export function Findings({ result }: { result: Result }) {
                 <p className="att-parts muted">{a.codeOnLoad ? a.findings.find((f) => f.kind === "code-on-load")?.evidence : [...new Set(a.vulns.map((f) => `${f.part?.name} ${f.part?.version}`))].slice(0, 4).join(", ") + (new Set(a.vulns.map((f) => f.part?.name)).size > 4 ? " and more" : "")}</p>
               </div>
               <div className="att-side">
-                <Sev s={a.worst} />
+                <FinePunch f={fineness(a.item, result.findings)} />
                 {a.advisories > 0 && <span className="muted">{a.advisories} {a.advisories === 1 ? "advisory" : "advisories"}</span>}
               </div>
             </a>
@@ -165,7 +171,7 @@ export function Findings({ result }: { result: Result }) {
 }
 
 // One card for a whole package environment, with each package a link to its certificate.
-function EnvCard({ e }: { e: Extract<Entry, { type: "env" }> }) {
+function EnvCard({ e, f }: { e: Extract<Entry, { type: "env" }>; f: number }) {
   const [open, setOpen] = useState(false);
   const shown = open ? e.list : e.list.slice(0, 10);
   return (
@@ -186,7 +192,7 @@ function EnvCard({ e }: { e: Extract<Entry, { type: "env" }> }) {
         </ul>
       </div>
       <div className="att-side">
-        <Sev s={e.worst} />
+        <FinePunch f={f} />
         <span className="muted">{e.advisories} advisories</span>
       </div>
     </div>

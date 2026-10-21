@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowUp, ExternalLink, FolderSearch, Lock, Play, RefreshCw, 
 import { useMemo, useState } from "react";
 import type { Finding, Item, Part } from "../../../shared/types";
 import { api, type Result } from "../api";
-import { KIND_NAME, LAYER_NAME, SEVERITY_RANK, attention, bytes, num, params } from "../format";
+import { KIND_NAME, LAYER_NAME, SEVERITY_RANK, attention, bytes, fineness, num, params } from "../format";
 import { ModelXray } from "./ModelXray";
 import { Button, Dialog, Hallmarks, KindGlyph, Sev } from "./ui";
 
@@ -134,7 +134,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
   return (
     <article className="page item">
       <a className="back" href={item.layer === "models" ? "#/models" : "#/inventory"}><ArrowLeft size={15} aria-hidden /> {item.layer === "models" ? "AI models" : "Inventory"}</a>
-      <Hallmarks kind={item.kind} clear={!att || att.worst === "info"} assay={result.id} />
+      <Hallmarks kind={item.kind} fine={fineness(item, result.findings)} assay={result.id} />
       <header className="item-head">
         {item.kind === "app" && item.path ? <img src={api.icon(item.path)} width={64} height={64} alt="" /> : <KindGlyph kind={item.kind} size={64} />}
         <div>

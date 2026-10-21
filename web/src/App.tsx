@@ -5,11 +5,12 @@ import { api, type Result } from "./api";
 import { Home } from "./components/Home";
 import { ItemView } from "./components/ItemView";
 import { Findings, Inventory, Models, Quarantine, SettingsPage } from "./components/Pages";
+import { MetalDefs } from "./components/Metal";
 import { Button } from "./components/ui";
 import { num, when } from "./format";
 
 const TABS = [
-  ["#/", "Assay"],
+  ["#/", "Touchstone"],
   ["#/findings", "Findings"],
   ["#/models", "Models"],
   ["#/inventory", "Inventory"],
@@ -105,30 +106,50 @@ export function App() {
   const tabOn = (href: string) =>
     href === "#/" ? route === "#/" : route.startsWith(href) || (itemLayer !== undefined && href === (itemLayer === "models" ? "#/models" : "#/inventory"));
 
+  const libs = result ? result.layers.reduce((a, l) => a + l.parts, 0) : 0;
+
   return (
     <div className="shell">
+      <MetalDefs />
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <a className="brand" href="#/" aria-label="Assay home">
-          <img src="/seal.svg" alt="" width={26} height={26} />
-          <span>Assay</span>
+          <BrandMark />
+          <span className="brand-word">Assay</span>
         </a>
         <nav className="tabs" aria-label="Pages">
           {TABS.map(([href, label]) => (
-            <a key={href} href={href} className="tab" aria-current={tabOn(href) ? "page" : undefined}>
+            <a key={href} href={href} className="plate" aria-current={tabOn(href) ? "page" : undefined}>
               {label}
               {href === "#/findings" && flagged > 0 && <span className="tab-n">{num(flagged)}</span>}
             </a>
           ))}
         </nav>
         <div className="top-right">
-          {result && !running && <span className="top-stamp">Assayed {when(result.finishedAt)}</span>}
-          <Button variant="ghost" icon={FlaskConical} busy={running} onClick={run}>{running ? "Assaying" : result ? "Run again" : "Run assay"}</Button>
-          <a href="#/settings" className="icon-btn" aria-label="Settings" aria-current={route === "#/settings" ? "page" : undefined}><Cog size={17} /></a>
+          {result && !running && (
+            <div className="readout" title={`Last assay ${new Date(result.finishedAt).toLocaleString()}`}>
+              <span className="lcd">{num(libs)} libraries weighed</span>
+              <span className="readout-note">{when(result.finishedAt)}</span>
+            </div>
+          )}
+          <Button variant={result ? "plate" : "gold"} icon={FlaskConical} busy={running} onClick={run}>{running ? "Assaying" : result ? "Assay again" : "Run assay"}</Button>
+          <a href="#/settings" className="icon-plate" aria-label="Settings" aria-current={route === "#/settings" ? "page" : undefined}><Cog size={16} /></a>
         </div>
       </header>
       {error && <p className="note-strip bad top-error" role="alert">Assay’s engine isn’t answering: {error}</p>}
       <main id="main">{page}</main>
     </div>
+  );
+}
+
+// Two streaks on a black stone: one gold, one copper. Assay's mark.
+function BrandMark() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden>
+      <rect x="1" y="1" width="28" height="28" rx="5" fill="#07080a" />
+      <rect x="1.5" y="1.5" width="27" height="27" rx="4.5" fill="none" stroke="#ffffff14" />
+      <path d="M6 20.5 C10 19, 15 18.4, 24 17" stroke="url(#m-fine)" strokeWidth="3.4" strokeLinecap="round" fill="none" filter="url(#rub)" />
+      <path d="M7 11.5 C11 11, 16 10.6, 21 9.8" stroke="url(#m-copper)" strokeWidth="2.6" strokeLinecap="round" fill="none" filter="url(#rub)" />
+    </svg>
   );
 }

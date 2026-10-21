@@ -53,9 +53,9 @@ Every model gets a cross-section drawn from its own tensor table: the embeddings
 
 ## The certificate
 
-<img src="docs/screens/certificate.png" alt="Unity Hub's certificate: the verdict, how the flaw reaches you, and one row per affected library" />
+<img src="docs/screens/certificate.png" alt="Discord's certificate in dark mode: the verdict, what it can reach, how the flaw reaches you, a strip of its 87 libraries with the flawed ones lit, and one row per affected library" />
 
-Everything Assay finds has a certificate page: what it is, how it was identified, every part inside it, and a verdict in one line. When something is wrong, it shows how the flaw reaches you, from the broken library, through where it sits inside the app, to the thing you actually use.
+Everything Assay finds has a certificate page: what it is, how it was identified, what it can reach, every part inside it as a strip with the flawed ones lit, and a verdict in one line. When something is wrong, it shows how the flaw reaches you, from the broken library, through where it sits inside the app, to the thing you actually use.
 
 Then one row per affected library, worst first, with the number of advisories and the version that fixes them. Open a row for each advisory, linked to its source. An app shipping Electron 19 doesn't get 253 lines of CVEs. It gets one sentence telling you to update it, and the evidence underneath.
 

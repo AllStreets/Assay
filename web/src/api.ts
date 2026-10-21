@@ -28,6 +28,8 @@ export const api = {
   reveal: (itemId: string) => post<void>("/api/actions/reveal", { itemId }),
   open: (itemId: string) => post<void>("/api/actions/open", { itemId }),
   specimen: () => post<{ path: string }>("/api/specimen"),
+  teardown: () => call<{ installed: boolean }>("/api/teardown"),
+  openInTeardown: (itemId: string | null, page?: "permissions" | "changes") => post<ActionResult>("/api/actions/teardown", { itemId, page }),
   openData: () => post<void>("/api/open-data"),
   about: () => call<{ version: string; dataDir: string }>("/api/about"),
   icon: (path: string) => `/api/icon?path=${encodeURIComponent(path)}`,

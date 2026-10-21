@@ -511,3 +511,4 @@ a.att-card:hover .att-title b { color: var(--hot); }
 .arrivals button { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: center; width: 100%; padding: 9px 0; text-align: left; background: none; border: 0; cursor: pointer; }
 .arrivals button:hover b { color: var(--hot); }
 .arrival-note p { color: var(--ink) !important; }
+.td-keys { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }

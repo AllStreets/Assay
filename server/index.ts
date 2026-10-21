@@ -1,7 +1,7 @@
 import express from "express";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { actionsFor, openApp, quarantine, quarantined, release, reveal, trash, update } from "./actions.js";
+import { actionsFor, openApp, openInTeardown, quarantine, quarantined, release, reveal, teardownInstalled, trash, update } from "./actions.js";
 import { getProgress, lastResult, startAssay } from "./assay.js";
 import { writeSpecimen } from "./models/specimen.js";
 import { noticesSince } from "./notices.js";
@@ -53,6 +53,8 @@ app.get("/api/progress", wrap(async (req, res) => {
   res.json(getProgress(Math.max(0, Number(req.query.from) || 0)));
 }));
 
+app.get("/api/teardown", wrap(async (_req, res) => res.json({ installed: await teardownInstalled() })));
+app.post("/api/actions/teardown", wrap(async (req, res) => res.json(await openInTeardown(req.body?.itemId, req.body?.page))));
 app.get("/api/notifications", wrap(async (req, res) => res.json(await noticesSince(Number(req.query.since) || 0))));
 
 app.get("/api/settings", wrap(async (_req, res) => res.json(await getSettings())));

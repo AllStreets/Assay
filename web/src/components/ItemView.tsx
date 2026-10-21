@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowUp, ExternalLink, FolderSearch, Lock, Play, RefreshCw, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Finding, Item, Part } from "../../../shared/types";
 import { api, type Result } from "../api";
 import { KIND_NAME, LAYER_NAME, REACH_LABEL, SEVERITY_RANK, STRONG_REACH, attention, bytes, fineness, num, params, reachOf } from "../format";
@@ -100,6 +100,10 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
   const findings = useMemo(() => result.findings.filter((f) => f.itemId === id).sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]), [result, id]);
   const att = useMemo(() => (item ? attention([item], findings)[0] : undefined), [item, findings]);
   const [confirm, setConfirm] = useState<Act | null>(null);
+  const [teardown, setTeardown] = useState(false);
+  useEffect(() => {
+    api.teardown().then((t) => setTeardown(t.installed), () => {});
+  }, []);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -178,7 +182,18 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
               ) : (
                 <p>{result.access?.read === false ? "Unknown: Assay needs Full Disk Access to read the permissions you’ve granted." : "Nothing sensitive. You haven’t granted it any privacy permissions."}</p>
               )}
-              {reachOf(item).length > 0 && att?.vulns.length ? <p className="reach-note">A flaw here reaches as far as these permissions do. Taking one back in System Settings, Privacy and Security, shrinks that until it’s updated.</p> : null}
+              {reachOf(item).length > 0 && att?.vulns.length ? <p className="reach-note">A flaw here reaches as far as these permissions do. Taking one back shrinks that until it’s updated.</p> : null}
+            </div>
+          )}
+          {item.kind === "app" && teardown && (
+            <div className="cert-block">
+              <h2 className="h3">In Teardown</h2>
+              <p>Teardown takes the app itself apart: how it’s built, what it’s been allowed, and earlier versions you can roll back to.</p>
+              <div className="td-keys">
+                <Button onClick={() => api.openInTeardown(item.id)}>x-ray</Button>
+                {reachOf(item).length > 0 && <Button onClick={() => api.openInTeardown(null, "permissions")}>permissions</Button>}
+                <Button onClick={() => api.openInTeardown(null, "changes")}>roll back</Button>
+              </div>
             </div>
           )}
           <div className="cert-block">

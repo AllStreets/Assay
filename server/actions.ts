@@ -163,3 +163,36 @@ export async function openApp(itemId: unknown) {
   const item = await find(itemId);
   if (item.kind === "app" && item.path) await run("open", [item.path], 5_000);
 }
+
+// ---------- Teardown ----------
+// Teardown is the per-app X-ray; Assay hands over to it rather than repeating it.
+
+const TEARDOWN_APP = "/Applications/Teardown.app";
+const TEARDOWN = "http://127.0.0.1:4710";
+
+export const teardownInstalled = () => exists(TEARDOWN_APP);
+
+async function teardownUp() {
+  return fetch(`${TEARDOWN}/api/focus`, { method: "HEAD", signal: AbortSignal.timeout(800) }).then(() => true, () => false);
+}
+
+export async function openInTeardown(itemId: unknown, page: unknown): Promise<ActionResult> {
+  if (!(await teardownInstalled())) throw new Error("Teardown isn’t installed in /Applications.");
+  let target: string;
+  if (page === "permissions" || page === "changes") target = `#/${page}`;
+  else {
+    const item = await find(itemId);
+    if (item.kind !== "app" || !item.path) throw new Error("Teardown takes apart apps only.");
+    target = `#/app/${encodeURIComponent(item.path)}`;
+  }
+  // Ask first so the page is waiting when the window appears, then bring Teardown forward.
+  const ask = () => fetch(`${TEARDOWN}/api/focus`, { method: "POST", headers: { "Content-Type": "application/json", Origin: "http://127.0.0.1:4720" }, body: JSON.stringify({ target }), signal: AbortSignal.timeout(2_000) });
+  const wasUp = await teardownUp();
+  if (wasUp) await ask().catch(() => {});
+  await run("open", ["-a", TEARDOWN_APP], 5_000);
+  if (!wasUp) {
+    for (let i = 0; i < 40 && !(await teardownUp()); i++) await new Promise((r) => setTimeout(r, 250));
+    await ask().catch(() => {});
+  }
+  return { ok: true, message: "Opened in Teardown." };
+}

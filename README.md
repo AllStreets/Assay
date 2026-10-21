@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#the-first-ten-seconds">Overview</a>&nbsp;&nbsp;&nbsp;
+  <a href="#the-touchstone">The touchstone</a>&nbsp;&nbsp;&nbsp;
   <a href="#ai-models">AI models</a>&nbsp;&nbsp;&nbsp;
   <a href="#the-certificate">Certificates</a>&nbsp;&nbsp;&nbsp;
   <a href="#findings">Findings</a>&nbsp;&nbsp;&nbsp;
@@ -20,20 +20,22 @@ Your Mac runs hundreds of pieces of software, and each one is built from dozens 
 Assay reads all of it: every app, AI model, browser and editor extension, Homebrew, npm and pip package, and Docker image, down to the exact version of every library inside. Then it checks each part against what's publicly known to be broken, and reads every model file byte by byte, without loading it, to see whether it would run code. When something needs doing, it tells you what, and every action it takes can be undone.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Assay running an assay: the contact sheet fills in with every app and package, red pencil marks circle what to fix, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
+  <img src="docs/demo.gif" alt="Assay running an assay: streaks go down on the touchstone and take their metal, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
 </p>
 
 On the Mac in these screenshots, Assay read **800 pieces of software built from 7,545 libraries** in about fifteen seconds, across four Node installs and four Pythons. **114 of them carry a known vulnerability**: 11 apps because they ship an old copy of Electron, and 63 packages in one forgotten Anaconda environment. Of the 12 AI models on disk (52 GB of them), one would run code when loaded. That one is Assay's own harmless test specimen, which you can write yourself from Settings.
 
 <br />
 
-## The first ten seconds
+## The touchstone
 
-<img src="docs/screens/sheet-detail.png" alt="A close crop of the contact sheet: package names typeset by install, with every flagged package in the Anaconda environment underlined in red pencil under the number 4" />
+<img src="docs/screens/stone-detail.png" alt="The touchstone: every app, model, extension and package as a streak of metal on a black stone, mostly gold, with copper streaks for software carrying known flaws, one red streak for the test specimen, and the first five things to fix scratched and numbered" />
 
-The home screen is a contact sheet of your whole Mac: every app by its icon, every model by name and size, and every extension, package and container image typeset in one block, grouped by the install it belongs to. It fills in while Assay reads, item by item.
+For two thousand years gold has been tested by rubbing it on a black stone and reading the colour of the streak. Assay's home screen is that stone. Every piece of software on your Mac leaves one streak, as long as what it carries, in the colour of its fineness: gold where nothing is published against any of its libraries, rose and copper where something is, and red for base metal, a model that would run code the moment it's loaded.
 
-When it's done you get one sentence, not a dashboard, and the five things to fix first. Those five are circled on the sheet in red pencil, numbered to match, the way an editor marks up a proof. Point at anything to read it, click it to open its certificate.
+Fineness is stated the way assay offices state it, in parts per thousand. An app is 915 fine when 915 of every 1,000 libraries inside it have nothing known against them. The Mac gets a fineness too, struck as a hallmark and read against the old hallmarking standards along the bottom of the stone: this one assays at 947, just above sterling.
+
+While an assay runs the streaks go down raw, item by item, and take their metal once every library has been checked. The five things to fix first are scratched and numbered on the stone to match the list beside it. Point at any streak to read it; click it to open its certificate.
 
 ## AI models
 
@@ -109,7 +111,7 @@ The first time the Mac app reads your Downloads, Documents or Desktop folder for
 
 ## Try it on something bad
 
-Settings can write `assay-test-specimen.pt` to your Downloads folder: a real PyTorch file whose pickle imports `os.system`, the same pattern real malicious models use. Its command only prints a line, so it's harmless even if something does load it, the way antivirus tools use the EICAR test file. Run the assay again and it's the first thing circled on the sheet. Quarantine it, then release it, to see the undo work.
+Settings can write `assay-test-specimen.pt` to your Downloads folder: a real PyTorch file whose pickle imports `os.system`, the same pattern real malicious models use. Its command only prints a line, so it's harmless even if something does load it, the way antivirus tools use the EICAR test file. Run the assay again and it shows up as the one red streak on the stone. Quarantine it, then release it, to see the undo work.
 
 ## Build it yourself
 
@@ -150,7 +152,7 @@ Then open http://localhost:4721. The first assay takes about half a minute. Afte
 | `server/vuln/osv.ts` | Batched OSV.dev lookups with an on-disk cache |
 | `server/findings.ts` | Turns what was read into findings and severities |
 | `server/actions.ts` | Quarantine, release, update, trash, reveal |
-| `web/` | The React interface; the pencil marks and model cross-sections are drawn in SVG |
+| `web/` | The React interface; the touchstone, hallmarks and model cross-sections are drawn in SVG |
 | `src-tauri/` | The Mac app: a small Rust shell that runs the engine beside it and shows the interface in the system WebKit |
 
 ```sh

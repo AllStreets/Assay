@@ -8,6 +8,7 @@ import { bySeverity, modelFindings, vulnFindings } from "./findings.js";
 import { RESULT_FILE } from "./paths.js";
 import { getSettings, readJson, writeJson } from "./store.js";
 import { check, checkable } from "./vuln/osv.js";
+import { attachReach } from "./grants.js";
 
 const LAYERS: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
 const empty = () => Object.fromEntries(LAYERS.map((l) => [l, { items: 0, parts: 0 }])) as Progress["found"];
@@ -97,6 +98,8 @@ async function runAssay(): Promise<AssayResult> {
 
   const findings = visible.flatMap(modelFindings);
   const queries = visible.flatMap((i) => i.parts.filter((p) => checkable(p.ecosystem) && p.version).map((p) => ({ ecosystem: p.ecosystem, name: p.name, version: p.version! })));
+  progress.stage = "Reading the permissions you’ve granted";
+  const access = await attachReach(visible);
   const vulnCheck: AssayResult["vulnCheck"] = { ran: false, queried: new Set(queries.map((q) => `${q.ecosystem}:${q.name}@${q.version}`)).size };
   if (settings.checkOnline && queries.length) {
     progress.stage = `Checking ${vulnCheck.queried.toLocaleString()} library versions against OSV.dev`;
@@ -121,6 +124,7 @@ async function runAssay(): Promise<AssayResult> {
     findings,
     layers: layersOf(visible),
     vulnCheck,
+    access,
   };
   if (containers.note) result.notes = [containers.note];
   await writeJson(RESULT_FILE, result);

@@ -81,7 +81,22 @@ const cmp = (a: string, b: string) => {
   return 0;
 };
 
+// The permissions that let a flaw reach the rest of the Mac, as a clause.
+export const STRONG_REACH = ["SystemPolicyAllFiles", "Accessibility", "ListenEvent", "ScreenCapture", "PostEvent"];
+const REACH_CLAUSE: Record<string, string> = {
+  SystemPolicyAllFiles: "has Full Disk Access", Accessibility: "can control your Mac", ListenEvent: "can see your keystrokes",
+  ScreenCapture: "can record your screen", PostEvent: "can type and click for you",
+};
+
 function fixFor(item: Item, fs: Finding[]): string {
+  const base = fixBase(item, fs);
+  const strong = reachOf(item).filter((r) => STRONG_REACH.includes(r));
+  if (!strong.length || !fs.some((f) => f.kind === "vulnerability")) return base;
+  const clauses = strong.slice(0, 2).map((r) => REACH_CLAUSE[r]);
+  return `${base} It ${clauses.join(" and ")}, so a flaw here reaches further than most.`;
+}
+
+function fixBase(item: Item, fs: Finding[]): string {
   if (fs.some((f) => f.kind === "code-on-load")) return "Quarantine it. It runs code the moment it’s loaded.";
   if (fs.some((f) => f.kind === "unreadable" && f.severity !== "info")) return "Don’t load it until you know where it came from. Assay couldn’t finish reading it.";
   const vulns = fs.filter((f) => f.kind === "vulnerability");
@@ -98,6 +113,18 @@ function fixFor(item: Item, fs: Finding[]): string {
   if (fs.every((f) => f.severity === "info")) return "Nothing to do now. Noted for awareness.";
   return "Review the advisories below.";
 }
+
+// The grants that make a flaw reach the rest of the Mac; mirrors server/grants.ts.
+export const REACH_LABEL: Record<string, string> = {
+  SystemPolicyAllFiles: "Full Disk Access", Accessibility: "Can control your Mac", ListenEvent: "Sees your keystrokes",
+  ScreenCapture: "Can record your screen", PostEvent: "Sends keystrokes and clicks", AppleEvents: "Controls other apps",
+  Microphone: "Microphone", Camera: "Camera", AudioCapture: "Records system audio", AddressBook: "Contacts", Photos: "Photos",
+  Calendar: "Calendars", SystemPolicyDocumentsFolder: "Documents folder", SystemPolicyDesktopFolder: "Desktop folder", SystemPolicyDownloadsFolder: "Downloads folder",
+};
+const REACH_W: Record<string, number> = { SystemPolicyAllFiles: 5, Accessibility: 5, ListenEvent: 5, ScreenCapture: 4, PostEvent: 4, AppleEvents: 3, Microphone: 3, Camera: 3, AudioCapture: 3, AddressBook: 2, Photos: 2 };
+export const reachOf = (i: Item) => (i.meta.reach as string[] | undefined) ?? [];
+export const strongReach = (i: Item) => reachOf(i).filter((r) => ["SystemPolicyAllFiles", "Accessibility", "ListenEvent", "ScreenCapture", "PostEvent"].includes(r)).length;
+export const reachWeight = (i: Item) => reachOf(i).reduce((a, s) => a + (REACH_W[s] ?? 1), 0);
 
 export function attention(items: Item[], findings: Finding[]): Attention[] {
   const by = new Map<string, Finding[]>();
@@ -117,7 +144,8 @@ export function attention(items: Item[], findings: Finding[]): Attention[] {
       advisories: new Set(vulns.map((f) => f.advisory?.id)).size,
     });
   }
-  return out.sort((a, b) => Number(b.codeOnLoad) - Number(a.codeOnLoad) || SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst] || b.advisories - a.advisories);
+  // Flaws times reach: within a severity, an app that can reach more of the Mac comes first.
+  return out.sort((a, b) => Number(b.codeOnLoad) - Number(a.codeOnLoad) || SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst] || strongReach(b.item) - strongReach(a.item) || b.advisories - a.advisories);
 }
 
 // One entry per thing you'd act on: an app, a model, or a whole package environment, since

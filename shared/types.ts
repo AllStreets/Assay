@@ -38,7 +38,7 @@ export interface Item {
   sizeBytes?: number;
   parts: Part[];
   // Kind-specific facts: an app's bundle id, a model's architecture.
-  meta: Record<string, string | number | boolean | undefined>;
+  meta: Record<string, string | number | boolean | string[] | undefined>;
   // A model's full reading, when the item is a model.
   model?: ModelReport;
 }
@@ -120,6 +120,8 @@ export interface AssayResult {
   findings: Finding[];
   layers: LayerSummary[];
   vulnCheck: { ran: boolean; queried: number; at?: number; error?: string };
+  // Whether the permissions you've granted could be read (needs Full Disk Access).
+  access?: { read: boolean; reason?: string };
   // Layers Assay couldn't read, said plainly (for example, Docker not running).
   notes?: string[];
 }

@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowUp, ExternalLink, FolderSearch, Lock, Play, RefreshCw, 
 import { useMemo, useState } from "react";
 import type { Finding, Item, Part } from "../../../shared/types";
 import { api, type Result } from "../api";
-import { KIND_NAME, LAYER_NAME, SEVERITY_RANK, attention, bytes, fineness, num, params } from "../format";
+import { KIND_NAME, LAYER_NAME, REACH_LABEL, SEVERITY_RANK, STRONG_REACH, attention, bytes, fineness, num, params, reachOf } from "../format";
 import { ModelXray } from "./ModelXray";
 import { Clean, ItemLogo, LibStrip } from "./Metal";
 import { Button, Dialog, KindGlyph, Sev } from "./ui";
@@ -164,6 +164,17 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
               {att ? att.fix : item.model ? (item.model.safeToLoad ? "Safe to load. No file in it can run code when it’s opened." : "Don’t load it until you know where it came from.") : "Nothing known against it."}
             </p>
           </div>
+          {item.kind === "app" && (
+            <div className="cert-block">
+              <h2 className="h3">What it can reach</h2>
+              {reachOf(item).length ? (
+                <ul className="reach-list">{reachOf(item).map((r) => <li key={r} className={STRONG_REACH.includes(r) ? "strong" : undefined}>{REACH_LABEL[r] ?? r}</li>)}</ul>
+              ) : (
+                <p>{result.access?.read === false ? "Unknown: Assay needs Full Disk Access to read the permissions you’ve granted." : "Nothing sensitive. You haven’t granted it any privacy permissions."}</p>
+              )}
+              {reachOf(item).length > 0 && att?.vulns.length ? <p className="reach-note">A flaw here reaches as far as these permissions do. Taking one back in System Settings, Privacy and Security, shrinks that until it’s updated.</p> : null}
+            </div>
+          )}
           <div className="cert-block">
             <h2 className="h3">Identified by</h2>
             <p>{item.evidence}</p>

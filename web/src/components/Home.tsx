@@ -74,6 +74,9 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
             </div>
           );
         })}
+        {!running && result?.access?.read === false && (
+          <p className="fine warn">Give Assay Full Disk Access in System Settings to rank flaws by what each app can reach.</p>
+        )}
         {!running && result && !result.vulnCheck.ran && (
           <p className="fine warn">{result.vulnCheck.error ? `OSV.dev couldn’t be reached: ${result.vulnCheck.error}.` : "The online check is off, so only models are judged."}</p>
         )}

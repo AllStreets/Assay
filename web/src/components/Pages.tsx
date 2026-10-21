@@ -2,7 +2,7 @@ import { FlaskConical, FolderOpen, Lock, PackageOpen, Search, ShieldCheck, Unloc
 import { useEffect, useMemo, useState } from "react";
 import type { Layer, QuarantineRecord, Settings } from "../../../shared/types";
 import { api, type Result } from "../api";
-import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, envFineness, fineness, num, params, when, type Entry } from "../format";
+import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, envFineness, fineness, REACH_LABEL, STRONG_REACH, reachOf, num, params, when, type Entry } from "../format";
 import { Clean, ItemLogo, LibStrip } from "./Metal";
 import { Button, Empty, KindGlyph, PageHead, Sev, Toggle } from "./ui";
 
@@ -141,6 +141,7 @@ export function Findings({ result }: { result: Result }) {
               <div className="att-body">
                 <p className="att-title"><b>{a.item.name}</b><span className="muted">{KIND_NAME[a.item.kind]}{a.item.version ? ` ${a.item.version}` : ""}{a.item.meta.envLabel ? `, ${a.item.meta.envLabel}` : ""}</span></p>
                 <p className="att-fix">{a.fix}</p>
+                {reachOf(a.item).length > 0 && <p className="reach-chips">{reachOf(a.item).slice(0, 4).map((r) => <span key={r} className={STRONG_REACH.includes(r) ? "strong" : undefined}>{REACH_LABEL[r]}</span>)}</p>}
                 {a.item.parts.length > 1 && <div className="att-strip"><LibStrip total={a.item.parts.length} bad={new Set(a.vulns.map((f) => `${f.part?.name}@${f.part?.version}@${f.part?.via ?? ""}`)).size} max={300} /></div>}
                 <p className="att-parts muted">{a.codeOnLoad ? a.findings.find((f) => f.kind === "code-on-load")?.evidence : [...new Set(a.vulns.map((f) => `${f.part?.name} ${f.part?.version}`))].slice(0, 4).join(", ") + (new Set(a.vulns.map((f) => f.part?.name)).size > 4 ? " and more" : "")}</p>
               </div>

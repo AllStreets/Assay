@@ -20,7 +20,7 @@ Your Mac runs hundreds of pieces of software, and each one is built from dozens 
 Assay reads all of it: every app, AI model, browser and editor extension, Homebrew, npm and pip package, and Docker image, down to the exact version of every library inside. Then it checks each part against what's publicly known to be broken, and reads every model file byte by byte, without loading it, to see whether it would run code. When something needs doing, it tells you what, and every action it takes can be undone.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Assay running an assay: the bench fills in live, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
+  <img src="docs/demo.gif" alt="Assay running an assay: the bench fills in live with models, flawed libraries and installs, then Discord ranked by what it can reach, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
 </p>
 
 On the Mac in these screenshots, Assay read **800 pieces of software built from 7,545 libraries** in about fifteen seconds, across four Node installs and four Pythons. **114 of them carry a known vulnerability**: 11 apps because they ship an old copy of Electron, and 63 packages in one forgotten Anaconda environment. Of the 12 AI models on disk (52 GB of them), one would run code when loaded. That one is Assay's own harmless test specimen, which you can write yourself from Settings.

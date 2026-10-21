@@ -52,7 +52,6 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
   const models = items.filter((i) => i.layer === "models").sort((a, b) => Number(view.code.has(b.id)) - Number(view.code.has(a.id)) || (b.model?.parameters ?? 0) - (a.model?.parameters ?? 0));
   const maxP = Math.max(1, ...models.map((m) => m.model?.parameters ?? 0));
   const arrivals = running ? [] : items.filter((i) => i.meta.notOpened || i.meta.caughtNew).sort((a, b) => Number(b.meta.caughtNew ?? b.meta.arrivedAt ?? 0) - Number(a.meta.caughtNew ?? a.meta.arrivedAt ?? 0));
-  const flaggedApps = apps.filter((a) => view.adv.has(a.id) || view.code.has(a.id));
   const libs = libraryRows(items, findings);
   const envs = installRows(items, findings);
   const flaggedIn = (l: Layer) => items.filter((i) => i.layer === l && view.flagged.has(i.id)).length;
@@ -119,7 +118,21 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
       </section>
 
       <section className="col col-mid">
-        <p className="lbl"><span>AI models <b>{num(counts.models.items)}</b></span><span>{running ? "as read" : view.code.size ? `${view.code.size} runs code` : "all safe to load"}</span></p>
+        <p className="lbl"><span>Apps <b>{num(counts.apps.items)}</b></span><span>{running ? "as read" : "most advisories first"}</span></p>
+        <div className="icon-grid">
+          {apps.map((a, k) => {
+            const n = view.adv.get(a.id);
+            return (
+              <button key={a.id} className={`icon-cell${n ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(a.id)}`)} title={`${a.name}${n ? `: ${n} advisories` : ""}`}>
+                <ItemLogo item={a} size={30} />
+                <span className="ix">{String(k + 1).padStart(2, "0")}</span>
+                {n ? <span className="cnt">{n}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="lbl lbl-gap"><span>AI models <b>{num(counts.models.items)}</b></span><span>{running ? "as read" : view.code.size ? `${view.code.size} runs code` : "all safe to load"}</span></p>
         <div className="model-rows">
           {models.map((m) => {
             const x = view.code.has(m.id);
@@ -165,19 +178,6 @@ export function Home({ result, progress, live, onRun, open }: { result: Result |
           ))}
         </div>
 
-        <p className="lbl lbl-gap"><span>Apps <b>{num(counts.apps.items)}</b></span><span>{running ? "as read" : `${flaggedApps.length} carry advisories`}</span></p>
-        <div className="app-strip">
-          {(running ? apps : flaggedApps).slice(0, 40).map((a) => {
-            const n = view.adv.get(a.id);
-            return (
-              <button key={a.id} className={`icon-cell${n ? " x" : ""}`} onClick={() => !running && open(`#/item/${encodeURIComponent(a.id)}`)} title={`${a.name}${n ? `: ${n} advisories` : ""}`}>
-                <ItemLogo item={a} size={26} />
-                {n ? <span className="cnt">{n}</span> : null}
-              </button>
-            );
-          })}
-          {!running && apps.length > flaggedApps.length && <a className="app-more" href="#/inventory">+{num(apps.length - flaggedApps.length)} clean</a>}
-        </div>
       </section>
 
       <section className="col col-right">

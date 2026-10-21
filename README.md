@@ -33,7 +33,7 @@ On the Mac in these screenshots, Assay read **800 pieces of software built from 
 
 Assay looks and works like a bench instrument. The big readout is the Mac's clean share: of every 1,000 libraries inside its software, how many have nothing published against them. Here it's 947. Beside it, a meter for each layer shows how much of it is flagged, and a short list says what to fix first.
 
-The middle of the bench is the supply chain. Every AI model comes first, with its maker's logo, its size and its precision. Then every flawed library on the machine, once each, with how many things carry it: `tar 7.5.7`, inside five apps. Then every place packages are installed, from Homebrew to each Node and Python, with a strip of its packages and the flagged ones lit. Apps come last, and only the ones carrying advisories. The read log on the right lists everything in the order Assay read it, with the real time it took to get there. While an assay runs, all three columns fill in live.
+The middle of the bench is the Mac itself. Every app by its own icon comes first, numbered and ordered by how many advisories it carries. Then every AI model, with its maker's logo, its size and its precision. Then every flawed library on the machine, once each, with how many things carry it: `tar 7.5.7`, inside five apps. Then every place packages are installed, from Homebrew to each Node and Python, with a strip of its packages and the flagged ones lit. The read log on the right lists everything in the order Assay read it, with the real time it took to get there. While an assay runs, all three columns fill in live.
 
 <img src="docs/screens/home-dark.png" alt="The same overview in dark mode: blue-black glass, serif numerals, and the same instruments" />
 

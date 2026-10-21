@@ -18,17 +18,18 @@ export function Inventory({ result }: { result: Result }) {
   const [q, setQ] = useState("");
   // What each item carries, in the same units as its certificate: advisories, or "runs code".
   const flagged = useMemo(() => {
-    const m = new Map<string, { adv: Set<string>; code: boolean }>();
+    const m = new Map<string, { adv: Set<string>; code: boolean; unread: boolean }>();
     for (const f of result.findings) {
       if (f.severity === "info") continue;
-      const e = m.get(f.itemId) ?? { adv: new Set<string>(), code: false };
+      const e = m.get(f.itemId) ?? { adv: new Set<string>(), code: false, unread: false };
       if (f.advisory) e.adv.add(f.advisory.id);
       if (f.kind === "code-on-load") e.code = true;
+      if (f.kind === "unreadable") e.unread = true;
       m.set(f.itemId, e);
     }
     return m;
   }, [result]);
-  const weight = (id: string) => { const e = flagged.get(id); return e ? (e.code ? 1e6 : 0) + e.adv.size : 0; };
+  const weight = (id: string) => { const e = flagged.get(id); return e ? (e.code ? 1e6 : 0) + (e.unread ? 1e5 : 0) + e.adv.size : 0; };
   const rows = result.items
     .filter((i) => layer === "all" || i.layer === layer)
     .filter((i) => !q || `${i.name} ${i.version ?? ""} ${i.parts.map((p) => p.name).join(" ")}`.toLowerCase().includes(q.toLowerCase()))
@@ -60,7 +61,7 @@ export function Inventory({ result }: { result: Result }) {
               <Icon item={i} />
               <span className="inv-name"><b>{i.name}</b><span className="muted">{KIND_NAME[i.kind]}{i.version ? ` ${i.version}` : ""}</span></span>
               <span className="inv-parts muted">{i.parts.length > 1 ? `${num(i.parts.length)} parts` : i.model ? params(i.model.parameters) : i.sizeBytes ? bytes(i.sizeBytes) : ""}</span>
-              <span className="inv-state">{(() => { const e = flagged.get(i.id); if (!e) return <span className="ok">Clear</span>; if (e.code) return <span className="flag">Runs code on load</span>; return <span className="flag">{e.adv.size} {e.adv.size === 1 ? "advisory" : "advisories"}</span>; })()}</span>
+              <span className="inv-state">{(() => { const e = flagged.get(i.id); if (!e) return <span className="ok">Clear</span>; if (e.code) return <span className="flag">Runs code on load</span>; if (!e.adv.size && e.unread) return <span className="flag">Couldn’t be checked</span>; return <span className="flag">{e.adv.size} {e.adv.size === 1 ? "advisory" : "advisories"}</span>; })()}</span>
             </a>
           </li>
         ))}
@@ -90,7 +91,7 @@ export function Models({ result }: { result: Result }) {
             <a className={`specimen${m.model?.safeToLoad ? "" : " danger"}`} href={`#/item/${encodeURIComponent(m.id)}`}>
               <div className="sp-top">
                 <span className={`fmt fmt-${m.model?.format}`}>{m.model?.format}</span>
-                <span className={m.model?.safeToLoad ? "ok" : "flag"}>{m.model?.safeToLoad ? "Safe to load" : "Runs code on load"}</span>
+                <span className={m.model?.safeToLoad ? "ok" : "flag"}>{m.model?.safeToLoad ? "Safe to load" : m.model?.files.some((f) => f.imports?.some((i) => i.verdict === "dangerous")) ? "Runs code on load" : "Couldn’t be checked"}</span>
               </div>
               <p className="sp-name">{m.name}</p>
               <p className="sp-src muted">{String(m.meta.source ?? "")}</p>

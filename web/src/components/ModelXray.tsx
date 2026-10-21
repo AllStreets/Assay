@@ -80,8 +80,9 @@ export function ModelXray({ item }: { item: Item }) {
                 ))}
               </ul>
             )}
-            {f.format === "gguf" && <p className="muted mf-note">GGUF stores weights and metadata only. It has no way to carry code.</p>}
-            {f.format === "safetensors" && <p className="muted mf-note">Safetensors stores tensors and a JSON header only. It has no way to carry code.</p>}
+            {f.error && <p className="mf-error">Couldn’t read to the end: {f.error}</p>}
+            {f.format === "gguf" && !f.error && <p className="muted mf-note">GGUF stores weights and metadata only. It has no way to carry code.</p>}
+            {f.format === "safetensors" && !f.error && <p className="muted mf-note">Safetensors stores tensors and a JSON header only. It has no way to carry code.</p>}
           </li>
         ))}
       </ul>

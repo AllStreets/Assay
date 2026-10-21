@@ -157,7 +157,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
           <div className="cert-block">
             <p className="label">VERDICT</p>
             <p className="cert-verdict">
-              {att ? att.fix : item.model ? (item.model.safeToLoad ? "Safe to load. No file in it can run code when it’s opened." : "Review before loading.") : "Nothing known against it."}
+              {att ? att.fix : item.model ? (item.model.safeToLoad ? "Safe to load. No file in it can run code when it’s opened." : "Don’t load it until you know where it came from.") : "Nothing known against it."}
             </p>
           </div>
           <div className="cert-block">

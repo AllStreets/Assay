@@ -66,13 +66,37 @@ function cmp(a: string, b: string) {
   return 0;
 }
 
+// CVSS v3.x base score from its vector, per the FIRST specification.
+export function cvss3(vector: string): number | undefined {
+  const m = Object.fromEntries(vector.split("/").slice(1).map((p) => p.split(":")));
+  const W = {
+    AV: { N: 0.85, A: 0.62, L: 0.55, P: 0.2 }, AC: { L: 0.77, H: 0.44 }, UI: { N: 0.85, R: 0.62 },
+    CIA: { H: 0.56, L: 0.22, N: 0 },
+  } as const;
+  const changed = m.S === "C";
+  const pr = { N: 0.85, L: changed ? 0.68 : 0.62, H: changed ? 0.5 : 0.27 }[m.PR as "N" | "L" | "H"];
+  const av = W.AV[m.AV as keyof typeof W.AV], ac = W.AC[m.AC as keyof typeof W.AC], ui = W.UI[m.UI as keyof typeof W.UI];
+  const [c, i, a] = [m.C, m.I, m.A].map((x) => W.CIA[x as keyof typeof W.CIA]);
+  if ([pr, av, ac, ui, c, i, a].some((x) => x === undefined)) return undefined;
+  const iss = 1 - (1 - c) * (1 - i) * (1 - a);
+  const impact = changed ? 7.52 * (iss - 0.029) - 3.25 * Math.pow(iss - 0.02, 15) : 6.42 * iss;
+  if (impact <= 0) return 0;
+  const exploit = 8.22 * av * ac * pr * ui;
+  const roundUp = (x: number) => { const n = Math.round(x * 100000); return n % 10000 === 0 ? n / 100000 : (Math.floor(n / 10000) + 1) / 10; };
+  return roundUp(Math.min(changed ? 1.08 * (impact + exploit) : impact + exploit, 10));
+}
+
 function severityOf(v: OsvVuln): Severity {
   const s = v.database_specific?.severity?.toUpperCase();
   if (s === "CRITICAL") return "critical";
   if (s === "HIGH") return "high";
   if (s === "MODERATE" || s === "MEDIUM") return "medium";
   if (s === "LOW") return "low";
-  return "medium";
+  // Many PyPA advisories carry only a CVSS vector; score it rather than guess.
+  const vec = v.severity?.find((x) => x.type === "CVSS_V3")?.score;
+  const score = vec ? cvss3(vec) : undefined;
+  if (score === undefined) return "medium";
+  return score >= 9 ? "critical" : score >= 7 ? "high" : score >= 4 ? "medium" : score > 0 ? "low" : "info";
 }
 
 function advisory(v: OsvVuln, q: Query): Advisory {

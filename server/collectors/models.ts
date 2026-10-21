@@ -17,6 +17,8 @@ export async function readWeights(file: string): Promise<{ file: ModelFile; repo
   const st = await fs.stat(file);
   const head = await readHead(file, 16);
   const base: ModelFile = { path: file, format: "unknown", sizeBytes: st.size };
+  // Decided before parsing, so a pickle that fails to parse is still known to be one.
+  const pickleShaped = (await isZip(head)) || looksLikePickle(head);
   try {
     if (head.toString("latin1", 0, 4) === "GGUF") {
       const g = await cached("gguf", file, `${st.size}:${st.mtimeMs}`, () => readGguf(file));
@@ -36,17 +38,19 @@ export async function readWeights(file: string): Promise<{ file: ModelFile; repo
         report: { format: "safetensors", parameters: s.parameters, quantization: s.dtype, tensorCount: s.tensors, groups: s.groups },
       };
     }
-    if ((await isZip(head)) || looksLikePickle(head)) {
+    if (pickleShaped) {
       const p = await cached("pickle", file, `${st.size}:${st.mtimeMs}`, () => scanPickleFile(file));
       return { file: { ...base, format: p.format, imports: p.imports } };
     }
     return { file: base };
   } catch (e) {
-    return { file: { ...base, error: (e as Error).message } };
+    return { file: { ...base, format: pickleShaped ? ((await isZip(head)) ? "pytorch-zip" : "pickle") : base.format, error: (e as Error).message } };
   }
 }
 
-function merge(files: { file: ModelFile; report?: Partial<ModelReport> }[]): ModelReport {
+const codeCapable = (f: ModelFormat) => f === "pickle" || f === "pytorch-zip";
+
+export function merge(files: { file: ModelFile; report?: Partial<ModelReport> }[]): ModelReport {
   const main = files.filter((f) => f.report).sort((a, b) => b.file.sizeBytes - a.file.sizeBytes)[0]?.report ?? {};
   const allGroups = new Map<string, TensorGroup>();
   let parameters = 0;
@@ -68,7 +72,8 @@ function merge(files: { file: ModelFile; report?: Partial<ModelReport> }[]): Mod
     tensorCount: tensors || undefined,
     groups: allGroups.size ? [...allGroups.values()] : undefined,
     files: files.map((f) => f.file),
-    safeToLoad: files.every((f) => !(f.file.imports ?? []).some((i) => i.verdict !== "safe")),
+    // Fails closed: a pickle Assay couldn't read to the end is not called safe.
+    safeToLoad: files.every((f) => !(f.file.imports ?? []).some((i) => i.verdict !== "safe") && !(f.file.error && codeCapable(f.file.format))),
   };
 }
 

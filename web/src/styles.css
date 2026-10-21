@@ -454,3 +454,4 @@ a.att-card:hover { border-color: #4a443d; background: var(--basalt-3); }
 .step.now { color: var(--bone); }
 .step.now .step-dot { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px var(--gold); animation: pulse 1.2s ease-in-out infinite; }
 .step.now .step-n { color: var(--gold); }
+.mf-error { margin-top: 8px; padding: 6px 10px; border-radius: 7px; font: 400 12px var(--mono); color: #f19a83; background: #e0603f14; box-shadow: inset 2px 0 0 var(--oxide); }

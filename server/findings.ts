@@ -56,13 +56,17 @@ export function modelFindings(item: Item): Finding[] {
       });
     }
     if (f.error) {
+      const pickle = f.format === "pickle" || f.format === "pytorch-zip";
       out.push({
         id: `f:${hash(`${item.id}:${f.path}:error`)}`,
         itemId: item.id,
         kind: "unreadable",
-        severity: "info",
-        title: "Couldn’t read one file",
-        detail: `${file}: ${f.error}`,
+        // A pickle that can't be followed to the end could be hiding anything, so it ranks high.
+        severity: pickle ? "high" : "info",
+        title: pickle ? "Couldn’t be checked" : "Couldn’t read one file",
+        detail: pickle
+          ? `Assay couldn’t follow ${file}’s pickle instructions to the end (${f.error}), so it can’t say what loading it would do. Treat it as unsafe until you know where it came from.`
+          : `${file}: ${f.error}`,
         evidence: f.path,
       });
     }

@@ -83,6 +83,7 @@ const cmp = (a: string, b: string) => {
 
 function fixFor(item: Item, fs: Finding[]): string {
   if (fs.some((f) => f.kind === "code-on-load")) return "Quarantine it. It runs code the moment it’s loaded.";
+  if (fs.some((f) => f.kind === "unreadable" && f.severity !== "info")) return "Don’t load it until you know where it came from. Assay couldn’t finish reading it.";
   const vulns = fs.filter((f) => f.kind === "vulnerability");
   const electron = vulns.filter((f) => f.part?.name === "electron");
   const others = new Set(vulns.filter((f) => f.part?.name !== "electron").map((f) => f.part?.name)).size;

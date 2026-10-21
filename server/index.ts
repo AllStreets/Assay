@@ -11,11 +11,24 @@ import { getSettings, hash, updateSettings } from "./store.js";
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 
-// Only pages served from this Mac may call the engine.
+// Only Assay's own pages may call the engine. The Host check stops a web page from
+// reaching it through DNS rebinding; requiring a matching Origin on anything that changes
+// state stops other sites, and other local servers' pages, from triggering actions.
+const OWN_PORTS = new Set([String(PORT), "4721"]);
+const ownHost = (h: string) => {
+  const m = h.match(/^(127\.0\.0\.1|localhost)(?::(\d+))?$/);
+  return !!m && OWN_PORTS.has(m[2] ?? "80");
+};
+const ownOrigin = (o: string) => {
+  const m = o.match(/^https?:\/\/(.+)$/);
+  return o === "tauri://localhost" || (!!m && ownHost(m[1]));
+};
 app.use("/api", (req, res, next) => {
+  if (!ownHost(req.headers.host ?? "")) return res.status(403).json({ error: "Assay only answers requests from this Mac." });
   const origin = req.headers.origin;
-  if (origin && !/^(https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?|tauri:\/\/localhost)$/.test(origin)) {
-    return res.status(403).json({ error: "Assay only answers requests from this Mac." });
+  const changes = req.method !== "GET" && req.method !== "HEAD";
+  if ((origin && !ownOrigin(origin)) || (changes && !origin)) {
+    return res.status(403).json({ error: "Assay only answers requests from its own window." });
   }
   next();
 });

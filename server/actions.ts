@@ -42,8 +42,35 @@ function safe(p: string) {
 }
 
 const records = () => readJson<QuarantineRecord[]>(QUARANTINE_FILE, []);
+const SIDECAR = ".assay-record.json";
 
-export async function quarantine(itemId: unknown): Promise<ActionResult> {
+// Quarantine and release run one at a time, so two calls can't overwrite each other's records.
+let queue: Promise<unknown> = Promise.resolve();
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const p = queue.then(fn, fn);
+  queue = p.catch(() => {});
+  return p;
+}
+
+// Every held item, including any whose move finished but whose entry in the list was never
+// written (a crash in between). Each quarantine folder carries its own record for this.
+async function held(): Promise<QuarantineRecord[]> {
+  const listed = await records();
+  const known = new Set(listed.map((r) => r.id));
+  const dirs = await fs.readdir(QUARANTINE_DIR).catch(() => [] as string[]);
+  const orphans: QuarantineRecord[] = [];
+  for (const d of dirs) {
+    if (known.has(d) || d.startsWith(".")) continue;
+    const rec = await readJson<QuarantineRecord | null>(path.join(QUARANTINE_DIR, d, SIDECAR), null);
+    if (rec && (await exists(rec.to))) orphans.push(rec);
+  }
+  return [...listed, ...orphans];
+}
+
+export const quarantine = (itemId: unknown) => serial(() => quarantineNow(itemId));
+export const release = (recordId: unknown) => serial(() => releaseNow(recordId));
+
+async function quarantineNow(itemId: unknown): Promise<ActionResult> {
   const item = await find(itemId);
   if (!actionsFor(item).includes("quarantine")) throw new Error("Assay can’t quarantine this kind of item.");
   const from = target(item);
@@ -59,34 +86,44 @@ export async function quarantine(itemId: unknown): Promise<ActionResult> {
   await fs.writeFile(path.join(QUARANTINE_DIR, ".metadata_never_index"), "").catch(() => {});
   const to = path.join(dir, path.basename(from) + (item.kind === "app" ? ".quarantined" : ""));
   const bytes = item.kind === "ollama-model" ? 0 : await duBytes(from);
+  // The record goes down beside the destination before anything moves, so a move is never
+  // left without a way back.
+  const draft: QuarantineRecord = { id, itemId: item.id, name: item.name, from, to, at: Date.now(), bytes };
+  await writeJson(path.join(dir, SIDECAR), draft);
   try {
     await fs.rename(from, to);
   } catch (e) {
+    await fs.rm(dir, { recursive: true, force: true });
     const code = (e as NodeJS.ErrnoException).code;
     if (code === "EXDEV") throw new Error("That item is on another disk; Assay only quarantines within one disk so release is instant.");
     if (code === "EACCES" || code === "EPERM") throw new Error("macOS didn’t allow Assay to move it. It may belong to an administrator.");
     throw e;
   }
-  const held = await withdraw(item.id);
-  const rec: QuarantineRecord = { id, itemId: item.id, name: item.name, from, to, at: Date.now(), bytes, item: held?.item, findings: held?.findings };
+  const out = await withdraw(item.id).catch(() => undefined);
+  const rec: QuarantineRecord = { ...draft, item: out?.item, findings: out?.findings };
   await writeJson(QUARANTINE_FILE, [rec, ...(await records())]);
+  await writeJson(path.join(dir, SIDECAR), rec).catch(() => {});
   return { ok: true, message: `${item.name} is quarantined. It can’t be used until you release it.`, undo: id };
 }
 
-export async function release(recordId: unknown): Promise<ActionResult> {
-  const all = await records();
+async function releaseNow(recordId: unknown): Promise<ActionResult> {
+  const all = await held();
   const rec = all.find((r) => r.id === recordId);
   if (!rec) throw new Error("No quarantine record with that id.");
+  if (!(await exists(rec.to))) {
+    await writeJson(QUARANTINE_FILE, (await records()).filter((r) => r.id !== rec.id));
+    throw new Error(`${rec.name} is no longer in quarantine, so there was nothing to put back.`);
+  }
   if (await exists(rec.from)) throw new Error("Something new is already at the original location; move it aside first.");
   await fs.mkdir(path.dirname(rec.from), { recursive: true });
   await fs.rename(rec.to, rec.from);
   await fs.rm(path.dirname(rec.to), { recursive: true, force: true });
-  await writeJson(QUARANTINE_FILE, all.filter((r) => r.id !== rec.id));
+  await writeJson(QUARANTINE_FILE, (await records()).filter((r) => r.id !== rec.id));
   if (rec.item) await restore(rec.item, rec.findings ?? []);
   return { ok: true, message: `${rec.name} is back where it was.` };
 }
 
-export const quarantined = records;
+export const quarantined = held;
 
 export async function trash(itemId: unknown): Promise<ActionResult> {
   const item = await find(itemId);

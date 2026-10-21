@@ -18,7 +18,7 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
   if (!result && !running) {
     return (
       <article className="home first">
-        <CoreSample counts={ZERO} marks={[]} drilling="apps" />
+        <CoreSample counts={ZERO} marks={[]} idle />
         <section className="home-right">
           <p className="phase">READY</p>
           <h1 className="verdict">Assay reads every piece of software on this Mac, down to the libraries inside it, and checks each one against what’s known to be broken.</h1>

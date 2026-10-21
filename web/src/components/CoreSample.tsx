@@ -16,6 +16,8 @@ interface Props {
   drilling?: Layer;
   onMark?: (id: string) => void;
   selected?: string;
+  // Before the first assay: the layers drawn as an outline, nothing drilled.
+  idle?: boolean;
 }
 
 const STRATA: Layer[] = ["apps", "extensions", "packages", "containers"];
@@ -39,7 +41,7 @@ function edge(y: number, seed: number, flat: boolean) {
 
 const reduce = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function CoreSample({ counts, marks, drilling, onMark, selected }: Props) {
+export function CoreSample({ counts, marks, drilling, onMark, selected, idle }: Props) {
   // Band heights follow the square root of what was found, so a huge layer can't crush the rest.
   const bands = useMemo(() => {
     const weights = STRATA.map((l) => Math.sqrt(Math.max(1, counts[l].items)) + 4);
@@ -55,8 +57,9 @@ export function CoreSample({ counts, marks, drilling, onMark, selected }: Props)
   const bottom = bands.at(-1)!.y + bands.at(-1)!.h;
 
   // Depth of the drill: follows the layer being read, then sweeps to the bottom once.
-  const [depth, setDepth] = useState(reduce() ? bottom : 0);
+  const [depth, setDepth] = useState(reduce() && !idle ? bottom : 0);
   useEffect(() => {
+    if (idle) return setDepth(TOP - 10);
     if (reduce()) return setDepth(bottom);
     const target = drilling
       ? (() => {
@@ -80,7 +83,7 @@ export function CoreSample({ counts, marks, drilling, onMark, selected }: Props)
       clearTimeout(done);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drilling, bottom]);
+  }, [drilling, bottom, idle]);
 
   const vein = `M${X - 4} ${TOP + 40} C ${X + 90} ${TOP + bottom * 0.28}, ${X + 30} ${TOP + bottom * 0.5}, ${X + 140} ${TOP + bottom * 0.66} S ${X + 190} ${bottom - 60}, ${X + W + 4} ${bottom - 20}`;
 
@@ -118,6 +121,17 @@ export function CoreSample({ counts, marks, drilling, onMark, selected }: Props)
         <linearGradient id="sheen" x1="0" x2="1"><stop offset="0" stopColor="#000" stopOpacity=".25" /><stop offset=".35" stopColor="#fff" stopOpacity=".06" /><stop offset="1" stopColor="#000" stopOpacity=".3" /></linearGradient>
       </defs>
       <rect x={X - 7} y={TOP - 13} width={W + 14} height={bottom - TOP + 26} rx={14} fill="none" stroke="#34302B" />
+      {idle && (
+        <g className="core-ghost">
+          {bands.slice(1).map((b, i) => (
+            <path key={b.layer} d={"M" + edge(b.y, i + 1, false).map((p) => p.join(" ")).join(" L")} stroke="#34302B" strokeDasharray="4 5" fill="none" />
+          ))}
+          {bands.map((b) => (
+            <text key={b.layer} x={X + W + 32} y={b.y + 25} className="core-name" style={{ fill: "#5E5850" }}>{LAYER_NAME[b.layer]}</text>
+          ))}
+          <path d={vein} stroke="#E8B04B" strokeOpacity={0.22} strokeWidth={2} strokeDasharray="3 6" fill="none" />
+        </g>
+      )}
       <g clipPath="url(#drill)">
         {bands.map((b, i) => {
           const top = edge(b.y, i, i === 0);

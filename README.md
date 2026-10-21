@@ -33,7 +33,7 @@ On the Mac in these screenshots, Assay read **800 pieces of software built from 
 
 Assay looks and works like a bench instrument. The big readout is the Mac's clean share: of every 1,000 libraries inside its software, how many have nothing published against them. Here it's 947. Beside it, a meter for each layer shows how much of it is flagged, and a short list says what to fix first.
 
-The middle of the bench is the Mac itself: every app by its own icon, numbered and ordered by how many advisories it carries, and every AI model with its maker's logo, its size and its precision. The read log on the right lists everything in the order Assay read it, with the real time it took to get there. While an assay runs, all three columns fill in live.
+The middle of the bench is the supply chain. Every AI model comes first, with its maker's logo, its size and its precision. Then every flawed library on the machine, once each, with how many things carry it: `tar 7.5.7`, inside five apps. Then every place packages are installed, from Homebrew to each Node and Python, with a strip of its packages and the flagged ones lit. Apps come last, and only the ones carrying advisories. The read log on the right lists everything in the order Assay read it, with the real time it took to get there. While an assay runs, all three columns fill in live.
 
 <img src="docs/screens/home-dark.png" alt="The same overview in dark mode: blue-black glass, serif numerals, and the same instruments" />
 
@@ -65,7 +65,15 @@ Then one row per affected library, worst first, with the number of advisories an
 
 <img src="docs/screens/findings.png" alt="Findings grouped by item, worst first, each with the one thing to do about it" />
 
-Findings are grouped by what you'd act on, not by advisory. Models that run code come first, then everything else by severity and by how much is known against it. Each one says what to do: update the app, update a package to a named version, or quarantine the file. Sixty outdated packages in one old Python install are one decision, so they're one card, with every package a link to its own certificate.
+Findings are grouped by what you'd act on, not by advisory. Models that run code come first, then everything else by severity and by what it can reach. Each one says what to do: update the app, update a package to a named version, or quarantine the file. Sixty outdated packages in one old Python install are one decision, so they're one card, with every package a link to its own certificate.
+
+## Flaws times reach
+
+A flaw in an app that can't touch anything matters less than the same flaw in one you've let record your screen. Assay reads the permissions you've actually granted, from macOS's own records, and ranks flawed apps that can see your keystrokes, record the screen, control the Mac or read every file ahead of those that can't. On this Mac, Discord carries 57 advisories and can see keystrokes and record the screen, so it sits right behind the one model that runs code. Each app's page lists what it can reach. Reading the records needs Full Disk Access; without it Assay ranks by flaws alone and says so.
+
+## Check before first run
+
+Assay keeps watching after an assay ends. When a new app lands in Applications, or a new model in Ollama, the Hugging Face cache or one of your model folders, Assay reads it right away, before anything opens or loads it, and tells you what it found. Downloaded apps that have never been opened are marked as such, so everything on their page was read without running them. A malicious pickle gets caught on the way in, not after it's loaded.
 
 ## Every install, not just the first on your PATH
 
@@ -83,6 +91,23 @@ Every action is reversible, and nothing happens until you press a button and con
 - **Show** reveals it in Finder, and **Open** launches an app so it can update itself.
 
 The saved assay follows what you do. A quarantined item leaves every page and comes back with its findings when you release it.
+
+## Assay and Teardown
+
+[Teardown](https://github.com/AllStreets/teardown) takes a single app apart: how it's built, what it's been allowed, and what changed when it updated. Assay checks what everything is made of. They know about each other: every app's page in Assay opens it in Teardown, at its X-ray, its permissions, or its version history, where an update can be rolled back.
+
+## In the menu bar, and for AI agents
+
+Close the window and Assay keeps watching from the menu bar. When it catches something on the way in, you get a macOS notification; click it and Assay opens on exactly that item.
+
+Assay also ships an MCP server, so an assistant like Claude can use it as a tool: "is anything on this Mac known to be exploitable?", "what still ships an old Electron?", "which of my models would run code?". It can quarantine or release something too, but only when you've agreed.
+
+```sh
+npm run build:mcp
+claude mcp add assay -- node "$(pwd)/build/assay-mcp.mjs"
+```
+
+Tools: `summary`, `list_findings`, `get_item`, `which_carry`, `list_models`, `run_assay`, `quarantine`, `release`. The server reads everything from the running Assay engine, so open the app first.
 
 ## How it knows
 
@@ -153,9 +178,12 @@ Then open http://localhost:4721. The first assay takes about half a minute. Afte
 | `server/models/pickle.ts` | A static pickle walker for protocols 0 to 5, PyTorch zip archives and safetensors headers |
 | `server/vuln/osv.ts` | Batched OSV.dev lookups with an on-disk cache |
 | `server/findings.ts` | Turns what was read into findings and severities |
-| `server/actions.ts` | Quarantine, release, update, trash, reveal |
+| `server/grants.ts` | Reads the permissions you've granted from macOS's TCC records |
+| `server/watch.ts` | Watches for new apps and models and checks them before first run |
+| `server/actions.ts` | Quarantine, release, update, trash, reveal, and handing over to Teardown |
+| `server/mcp.ts` | The MCP server for AI agents |
 | `web/` | The React interface, in light and dark; the meters, library strips and model cross-sections are drawn by hand |
-| `src-tauri/` | The Mac app: a small Rust shell that runs the engine beside it and shows the interface in the system WebKit |
+| `src-tauri/` | The Mac app: a small Rust shell that runs the engine beside it, shows the interface in the system WebKit, lives in the menu bar and sends notifications |
 
 ```sh
 npm test        # the pickle walker against payloads for every protocol

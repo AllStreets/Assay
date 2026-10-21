@@ -9,7 +9,8 @@
     "test": "tsx --test server/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build:engine": "./scripts/build-engine.sh",
-    "app": "vite build && ./scripts/build-engine.sh && tauri build --bundles app"
+    "app": "vite build && ./scripts/build-engine.sh && tauri build --bundles app",
+    "build:mcp": "esbuild server/mcp.ts --bundle --platform=node --format=esm --target=node20 --outfile=build/assay-mcp.mjs --log-level=warning"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
@@ -17,11 +18,13 @@
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/space-grotesk": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "express": "^5.3.0",
     "lucide-react": "^1.60.0",
     "plist": "^5.0.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",

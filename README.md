@@ -20,7 +20,7 @@ Your Mac runs hundreds of pieces of software, and each one is built from dozens 
 Assay reads all of it: every app, AI model, browser and editor extension, Homebrew, npm and pip package, and Docker image, down to the exact version of every library inside. Then it checks each part against what's publicly known to be broken, and reads every model file byte by byte, without loading it, to see whether it would run code. When something needs doing, it tells you what, and every action it takes can be undone.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Assay running an assay: the core sample fills layer by layer, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
+  <img src="docs/demo.gif" alt="Assay running an assay: the contact sheet fills in with every app and package, red pencil marks circle what to fix, then the test specimen's certificate, an Electron app's affected libraries, and a model's cross-section" width="900" />
 </p>
 
 On the Mac in these screenshots, Assay read **800 pieces of software built from 7,545 libraries** in about fifteen seconds, across four Node installs and four Pythons. **114 of them carry a known vulnerability**: 11 apps because they ship an old copy of Electron, and 63 packages in one forgotten Anaconda environment. Of the 12 AI models on disk (52 GB of them), one would run code when loaded. That one is Assay's own harmless test specimen, which you can write yourself from Settings.
@@ -29,11 +29,11 @@ On the Mac in these screenshots, Assay read **800 pieces of software built from 
 
 ## The first ten seconds
 
-<img src="docs/screens/running.png" alt="An assay in progress: the core sample drilled down to the packages layer, with each layer's count filling in beside it" />
+<img src="docs/screens/home.png" alt="The home screen: every app icon, model and package name on one contact sheet, with the first five things to fix circled and numbered in red pencil, beside a one-sentence verdict" />
 
-The home screen is a core sample of your Mac, drilled while it reads. Apps, extensions, packages and containers settle into layers as they're found, and the AI models run through all of them as a gold vein, because models now turn up everywhere: in Ollama, in the Hugging Face cache, in an app's resources, in your Downloads folder.
+The home screen is a contact sheet of your whole Mac: every app by its icon, every model by name and size, and every extension, package and container image typeset in one block, grouped by the install it belongs to. It fills in while Assay reads, item by item.
 
-When the drill reaches the bottom you get one sentence, not a dashboard, and a short list of what to do first. Each mark on the sample is something that needs attention. Click it to see why.
+When it's done you get one sentence, not a dashboard, and the five things to fix first. Those five are circled on the sheet in red pencil, numbered to match, the way an editor marks up a proof. Point at anything to read it, click it to open its certificate.
 
 ## AI models
 
@@ -109,7 +109,7 @@ The first time the Mac app reads your Downloads, Documents or Desktop folder for
 
 ## Try it on something bad
 
-Settings can write `assay-test-specimen.pt` to your Downloads folder: a real PyTorch file whose pickle imports `os.system`, the same pattern real malicious models use. Its command only prints a line, so it's harmless even if something does load it, the way antivirus tools use the EICAR test file. Run the assay again and it shows up in red, on the vein. Quarantine it, then release it, to see the undo work.
+Settings can write `assay-test-specimen.pt` to your Downloads folder: a real PyTorch file whose pickle imports `os.system`, the same pattern real malicious models use. Its command only prints a line, so it's harmless even if something does load it, the way antivirus tools use the EICAR test file. Run the assay again and it's the first thing circled on the sheet. Quarantine it, then release it, to see the undo work.
 
 ## Build it yourself
 
@@ -150,7 +150,7 @@ Then open http://localhost:4721. The first assay takes about half a minute. Afte
 | `server/vuln/osv.ts` | Batched OSV.dev lookups with an on-disk cache |
 | `server/findings.ts` | Turns what was read into findings and severities |
 | `server/actions.ts` | Quarantine, release, update, trash, reveal |
-| `web/` | The React interface; the core sample and model cross-sections are hand-drawn SVG |
+| `web/` | The React interface; the pencil marks and model cross-sections are drawn in SVG |
 | `src-tauri/` | The Mac app: a small Rust shell that runs the engine beside it and shows the interface in the system WebKit |
 
 ```sh

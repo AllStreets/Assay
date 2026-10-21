@@ -139,6 +139,7 @@ export function ItemView({ result, id, onChanged }: { result: Result; id: string
         {item.kind === "app" && item.path ? <img src={api.icon(item.path)} width={64} height={64} alt="" /> : <KindGlyph kind={item.kind} size={64} />}
         <div>
           <h1>{item.name}</h1>
+          {item.meta.envLabel ? <p className="env">Installed in {String(item.meta.envLabel)}</p> : null}
           {item.path && <code className="path">{item.path.replace(/^\/Users\/[^/]+/, "~")}</code>}
         </div>
         <div className="item-actions">

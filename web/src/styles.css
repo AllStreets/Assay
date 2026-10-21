@@ -455,3 +455,15 @@ a.att-card:hover { border-color: #4a443d; background: var(--basalt-3); }
 .step.now .step-dot { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px var(--gold); animation: pulse 1.2s ease-in-out infinite; }
 .step.now .step-n { color: var(--gold); }
 .mf-error { margin-top: 8px; padding: 6px 10px; border-radius: 7px; font: 400 12px var(--mono); color: #f19a83; background: #e0603f14; box-shadow: inset 2px 0 0 var(--oxide); }
+.env { margin-top: 6px; color: var(--bone-2); font-size: 14px; }
+
+/* A package environment as one card */
+.env-pkgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.env-pkg { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--rule); background: var(--basalt); font-size: 12px; transition: border-color 0.15s; }
+.env-pkg:hover { border-color: #5a5249; }
+.env-pkg code { color: var(--bone); font-size: 12px; }
+.env-pkg span { font: 400 11px var(--mono); color: var(--ash); }
+.env-pkg::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ash); align-self: center; }
+.sev-dot-critical::before, .sev-dot-high::before { background: var(--oxide); box-shadow: 0 0 6px var(--oxide); }
+.sev-dot-medium::before { background: var(--amber); }
+.env-more { padding: 4px 9px; border-radius: 7px; border: 1px dashed var(--rule); background: none; color: var(--gold); font-size: 12px; cursor: pointer; }

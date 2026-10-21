@@ -2,7 +2,7 @@ import { FlaskConical, FolderOpen, Lock, PackageOpen, Search, ShieldCheck, Unloc
 import { useEffect, useMemo, useState } from "react";
 import type { Layer, QuarantineRecord, Settings } from "../../../shared/types";
 import { api, type Result } from "../api";
-import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, num, params, when } from "../format";
+import { KIND_NAME, LAYER_NAME, LAYER_SUB, attention, bytes, entries, num, params, when, type Entry } from "../format";
 import { Button, Empty, KindGlyph, PageHead, Sev, Toggle } from "./ui";
 
 const LAYERS: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
@@ -59,7 +59,7 @@ export function Inventory({ result }: { result: Result }) {
           <li key={i.id}>
             <a href={`#/item/${encodeURIComponent(i.id)}`} className="inv-row">
               <Icon item={i} />
-              <span className="inv-name"><b>{i.name}</b><span className="muted">{KIND_NAME[i.kind]}{i.version ? ` ${i.version}` : ""}</span></span>
+              <span className="inv-name"><b>{i.name}</b><span className="muted">{KIND_NAME[i.kind]}{i.version ? ` ${i.version}` : ""}{i.meta.envLabel ? `, ${i.meta.envLabel}` : ""}</span></span>
               <span className="inv-parts muted">{i.parts.length > 1 ? `${num(i.parts.length)} parts` : i.model ? params(i.model.parameters) : i.sizeBytes ? bytes(i.sizeBytes) : ""}</span>
               <span className="inv-state">{(() => { const e = flagged.get(i.id); if (!e) return <span className="ok">Clear</span>; if (e.code) return <span className="flag">Runs code on load</span>; if (!e.adv.size && e.unread) return <span className="flag">Couldn’t be checked</span>; return <span className="flag">{e.adv.size} {e.adv.size === 1 ? "advisory" : "advisories"}</span>; })()}</span>
             </a>
@@ -126,12 +126,14 @@ export function Findings({ result }: { result: Result }) {
       />
       {!list.length && <Empty icon={ShieldCheck} title="Nothing needs attention">No piece of software matches a known vulnerability or an unsafe model.</Empty>}
       <ul className="att-list">
-        {list.map((a) => (
+        {entries(list).map((e) => e.type === "env" ? (
+          <li key={e.key}><EnvCard e={e} /></li>
+        ) : (() => { const a = e.a; return (
           <li key={a.item.id}>
             <a href={`#/item/${encodeURIComponent(a.item.id)}`} className="att-card">
               <Icon item={a.item} />
               <div className="att-body">
-                <p className="att-title"><b>{a.item.name}</b><span className="muted">{KIND_NAME[a.item.kind]}{a.item.version ? ` ${a.item.version}` : ""}</span></p>
+                <p className="att-title"><b>{a.item.name}</b><span className="muted">{KIND_NAME[a.item.kind]}{a.item.version ? ` ${a.item.version}` : ""}{a.item.meta.envLabel ? `, ${a.item.meta.envLabel}` : ""}</span></p>
                 <p className="att-fix">{a.fix}</p>
                 <p className="att-parts muted">{a.codeOnLoad ? a.findings.find((f) => f.kind === "code-on-load")?.evidence : [...new Set(a.vulns.map((f) => `${f.part?.name} ${f.part?.version}`))].slice(0, 4).join(", ") + (new Set(a.vulns.map((f) => f.part?.name)).size > 4 ? " and more" : "")}</p>
               </div>
@@ -141,7 +143,7 @@ export function Findings({ result }: { result: Result }) {
               </div>
             </a>
           </li>
-        ))}
+        ); })())}
       </ul>
       {notes.length > 0 && (
         <>
@@ -159,6 +161,35 @@ export function Findings({ result }: { result: Result }) {
         </>
       )}
     </article>
+  );
+}
+
+// One card for a whole package environment, with each package a link to its certificate.
+function EnvCard({ e }: { e: Extract<Entry, { type: "env" }> }) {
+  const [open, setOpen] = useState(false);
+  const shown = open ? e.list : e.list.slice(0, 10);
+  return (
+    <div className="att-card env-card">
+      <KindGlyph kind={e.list[0].item.kind} size={28} />
+      <div className="att-body">
+        <p className="att-title"><b>{e.label}</b><span className="muted">{e.list.length} {e.manager === "Homebrew" ? "formulae" : "packages"} with advisories</span></p>
+        <p className="att-fix">{e.fix}</p>
+        <ul className="env-pkgs">
+          {shown.map((a) => (
+            <li key={a.item.id}>
+              <a href={`#/item/${encodeURIComponent(a.item.id)}`} className={`env-pkg sev-dot-${a.worst}`}>
+                <code>{a.item.name}</code><span>{a.item.version}</span>
+              </a>
+            </li>
+          ))}
+          {e.list.length > 10 && !open && <li><button className="env-more" onClick={() => setOpen(true)}>{e.list.length - 10} more</button></li>}
+        </ul>
+      </div>
+      <div className="att-side">
+        <Sev s={e.worst} />
+        <span className="muted">{e.advisories} advisories</span>
+      </div>
+    </div>
   );
 }
 

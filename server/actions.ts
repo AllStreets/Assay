@@ -143,10 +143,13 @@ export async function update(itemId: unknown): Promise<ActionResult> {
   const item = await find(itemId);
   let cmd: string[];
   if (item.kind === "brew") cmd = ["brew", "upgrade", item.name];
-  else if (item.kind === "npm-global") cmd = ["npm", "install", "-g", `${item.name}@latest`];
+  else if (item.kind === "npm-global") cmd = [path.join(String(item.meta.bin), "npm"), "install", "-g", `${item.name}@latest`];
   else if (item.kind === "pip") cmd = [path.join(String(item.meta.environment), "bin", "python3"), "-m", "pip", "install", "--upgrade", item.name];
   else throw new Error("Assay can’t update this kind of item.");
-  const r = await run("/bin/sh", ["-lc", cmd.map((c) => `'${c.replace(/'/g, "'\\''")}'`).join(" ")], 600_000);
+  const quoted = cmd.map((c) => `'${c.replace(/'/g, "'\\''")}'`).join(" ");
+  // npm runs with its own node first on PATH, so it updates the install it came from.
+  const env = item.kind === "npm-global" ? `/usr/bin/env -u npm_config_prefix -u NPM_CONFIG_PREFIX PATH='${String(item.meta.bin).replace(/'/g, "'\\''")}':"$PATH" ` : "";
+  const r = await run("/bin/sh", ["-lc", env + quoted], 600_000);
   if (!r.ok) throw new Error((r.stderr || r.stdout).trim().split("\n").slice(-3).join(" ") || "The update failed.");
   return { ok: true, message: `${item.name} was updated with ${cmd[0] === "brew" ? "Homebrew" : cmd.includes("pip") ? "pip" : "npm"}. Run the assay again to confirm the fix.` };
 }

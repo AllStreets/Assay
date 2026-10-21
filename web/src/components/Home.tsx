@@ -1,7 +1,7 @@
 import { ArrowRight, FlaskConical, ShieldCheck } from "lucide-react";
 import type { Layer, Progress } from "../../../shared/types";
 import type { Result } from "../api";
-import { LAYER_NAME, attention, num } from "../format";
+import { LAYER_NAME, attention, entries, num } from "../format";
 
 const ORDER: Layer[] = ["apps", "models", "extensions", "packages", "containers"];
 import { CoreSample, type Mark } from "./CoreSample";
@@ -91,7 +91,21 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
           <div className="attention">
             <p className="label">WHAT TO DO FIRST</p>
             <ul>
-              {list.slice(0, 5).map((a) => (
+              {entries(list).slice(0, 5).map((e) => e.type === "env" ? (
+                <li key={e.key}>
+                  <button className="att-row" onClick={() => open("#/findings")}>
+                    <KindGlyph kind={e.list[0].item.kind} size={34} />
+                    <span className="att-text">
+                      <b>{e.label}</b>
+                      <span>{e.fix}</span>
+                    </span>
+                    <span className="att-meta">
+                      <Sev s={e.worst} />
+                      <span className="muted">{e.advisories} advisories</span>
+                    </span>
+                  </button>
+                </li>
+              ) : (() => { const a = e.a; return (
                 <li key={a.item.id}>
                   <button className="att-row" onClick={() => open(`#/item/${encodeURIComponent(a.item.id)}`)}>
                     {a.item.kind === "app" && a.item.path ? <img src={api.icon(a.item.path)} width={34} height={34} alt="" /> : <KindGlyph kind={a.item.kind} size={34} />}
@@ -105,9 +119,9 @@ export function Home({ result, progress, onRun, open }: { result: Result | null;
                     </span>
                   </button>
                 </li>
-              ))}
+              ); })())}
             </ul>
-            {list.length > 5 && (
+            {entries(list).length > 5 && (
               <button className="link-more" onClick={() => open("#/findings")}>All {list.length} items that need attention <ArrowRight size={14} aria-hidden /></button>
             )}
           </div>

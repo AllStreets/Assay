@@ -92,7 +92,7 @@ function fixFor(item: Item, fs: Finding[]): string {
     return `Update ${item.name}. It ships Electron ${electron[0].part?.version}, which has ${adv} published ${adv === 1 ? "advisory" : "advisories"}${others ? `, and ${others} other affected ${others === 1 ? "library" : "libraries"}` : ""}.`;
   }
   if (item.kind === "app") return `Update ${item.name} when its developer ships a fix. It bundles ${new Set(vulns.map((f) => f.part?.name)).size} affected ${new Set(vulns.map((f) => f.part?.name)).size === 1 ? "package" : "packages"}.`;
-  if (item.kind === "npm-global") return `Update it with npm.`;
+  if (item.kind === "npm-global") return `Update it with npm${item.meta.envLabel ? ` in ${item.meta.envLabel}` : ""}.`;
   if (item.kind === "pip") return `Update it with pip${vulns[0]?.advisory?.fixed ? ` to ${vulns.map((f) => f.advisory?.fixed).filter(Boolean).sort((a, b) => cmp(a!, b!)).at(-1)} or later` : ""}.`;
   if (item.kind === "editor-extension") return "Update it from your editor’s extensions view.";
   if (fs.every((f) => f.severity === "info")) return "Nothing to do now. Noted for awareness.";
@@ -118,6 +118,46 @@ export function attention(items: Item[], findings: Finding[]): Attention[] {
     });
   }
   return out.sort((a, b) => Number(b.codeOnLoad) - Number(a.codeOnLoad) || SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst] || b.advisories - a.advisories);
+}
+
+// One entry per thing you'd act on: an app, a model, or a whole package environment, since
+// fifty outdated packages in one old Python install are one decision, not fifty.
+export type Entry =
+  | { type: "item"; a: Attention }
+  | { type: "env"; key: string; label: string; manager: string; list: Attention[]; worst: Severity; advisories: number; fix: string };
+
+const ENV_FIX: Record<string, (n: number) => string> = {
+  pip: (n) => `${n} packages here have published advisories. Update them with pip in this environment, or remove the environment if nothing uses it.`,
+  npm: (n) => `${n} global packages here have published advisories. Update them with npm, or remove ones you no longer use.`,
+  Homebrew: (n) => `${n} formulae have published advisories. Run brew upgrade.`,
+};
+
+export function entries(list: Attention[]): Entry[] {
+  const groups = new Map<string, Attention[]>();
+  for (const a of list) {
+    const label = a.item.layer === "packages" ? String(a.item.meta.envLabel ?? (a.item.kind === "brew" ? "Homebrew" : "")) : "";
+    if (label && !a.codeOnLoad) groups.set(label, [...(groups.get(label) ?? []), a]);
+  }
+  const out: Entry[] = [];
+  const done = new Set<string>();
+  for (const a of list) {
+    const label = a.item.layer === "packages" ? String(a.item.meta.envLabel ?? (a.item.kind === "brew" ? "Homebrew" : "")) : "";
+    const g = label ? groups.get(label) : undefined;
+    if (!g || g.length < 2) {
+      out.push({ type: "item", a });
+      continue;
+    }
+    if (done.has(label)) continue;
+    done.add(label);
+    const manager = String(g[0].item.meta.manager ?? "");
+    out.push({
+      type: "env", key: label, label, manager, list: g,
+      worst: worst(g.flatMap((x) => x.findings)),
+      advisories: new Set(g.flatMap((x) => x.vulns.map((f) => f.advisory?.id))).size,
+      fix: (ENV_FIX[manager] ?? ENV_FIX.npm)(g.length),
+    });
+  }
+  return out;
 }
 
 export function when(t?: number) {
